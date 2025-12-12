@@ -4,7 +4,7 @@
       <div class="signup-card">
         <div class="signup-header">
           <h1>회원가입</h1>
-          <p>GameMate와 함께 시작하세요</p>
+          <p>0982 공구팔이와 함께 시작하세요</p>
         </div>
         <form @submit.prevent="handleSignup" class="signup-form">
           <div class="form-row">
@@ -15,16 +15,6 @@
                 v-model="form.name"
                 type="text"
                 placeholder="이름을 입력하세요"
-                required
-              />
-            </div>
-            <div class="form-group">
-              <label for="nickname">닉네임</label>
-              <input
-                id="nickname"
-                v-model="form.nickname"
-                type="text"
-                placeholder="닉네임을 입력하세요"
                 required
               />
             </div>
@@ -49,25 +39,24 @@
                 {{ emailVerified ? '✓ 인증완료' : emailVerifying ? '전송 중...' : '인증하기' }}
               </button>
             </div>
-            <div v-if="emailCodeSent && !emailVerified" class="verification-code-group">
+            <div v-if="emailSent && !emailVerified" class="verification-token-group">
               <input
-                v-model="form.verificationCode"
+                v-model="form.verificationToken"
                 type="text"
-                placeholder="인증 코드를 입력하세요"
-                maxlength="6"
-                class="code-input"
+                placeholder="이메일로 받은 인증 토큰을 입력하세요"
+                class="token-input"
               />
               <button
                 type="button"
-                class="btn-verify-code"
-                :disabled="!form.verificationCode || verifyingCode"
-                @click="verifyEmailCode"
+                class="btn-verify-token"
+                :disabled="!form.verificationToken || verifyingToken"
+                @click="verifyEmailToken"
               >
-                {{ verifyingCode ? '확인 중...' : '확인' }}
+                {{ verifyingToken ? '인증 중...' : '인증 완료' }}
               </button>
             </div>
             <p v-if="emailVerified" class="form-success">✓ 이메일 인증이 완료되었습니다</p>
-            <p v-else-if="emailCodeSent" class="form-hint">이메일로 전송된 인증 코드를 입력해주세요</p>
+            <p v-else-if="emailSent" class="form-hint">이메일로 전송된 인증 토큰을 입력해주세요</p>
           </div>
           <div class="form-group">
             <label for="password">비밀번호</label>
@@ -95,42 +84,16 @@
             </p>
           </div>
           <div class="form-group">
-            <label for="phone">전화번호</label>
+            <label for="phoneNumber">전화번호</label>
             <input
-              id="phone"
-              v-model="form.phone"
+              id="phoneNumber"
+              v-model="form.phoneNumber"
               type="tel"
               placeholder="010-0000-0000"
               required
             />
           </div>
-          <div class="form-group">
-            <label>회원 유형</label>
-            <div class="radio-group">
-              <label class="radio-label">
-                <input type="radio" v-model="form.userType" value="user" />
-                <span>일반 사용자</span>
-              </label>
-              <label class="radio-label">
-                <input type="radio" v-model="form.userType" value="seller" />
-                <span>판매자</span>
-              </label>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="form.agreeTerms" required />
-              <span>이용약관에 동의합니다</span>
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="form.agreePrivacy" required />
-              <span>개인정보 처리방침에 동의합니다</span>
-            </label>
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="form.agreeMarketing" />
-              <span>마케팅 정보 수신에 동의합니다 (선택)</span>
-            </label>
-          </div>
+        
           <button type="submit" class="btn btn-primary" :disabled="loading || !isFormValid">
             {{ loading ? '가입 중...' : '회원가입' }}
           </button>
@@ -147,29 +110,24 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { generateUUIDFromEmail } from '@/utils/uuid'
+import { authAPI } from '@/api/auth'
 
 const router = useRouter()
 
 const form = ref({
   name: '',
-  nickname: '',
   email: '',
-  verificationCode: '',
   password: '',
   passwordConfirm: '',
-  phone: '',
-  userType: 'user',
-  agreeTerms: false,
-  agreePrivacy: false,
-  agreeMarketing: false
+  phoneNumber: '',
+  verificationToken: ''
 })
 
 const loading = ref(false)
-const emailCodeSent = ref(false)
+const emailSent = ref(false)
 const emailVerified = ref(false)
-const emailVerifying = ref(false)
-const verifyingCode = ref(false)
+const emailSending = ref(false)
+const verifyingToken = ref(false)
 
 const isEmailValid = computed(() => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -179,64 +137,60 @@ const isEmailValid = computed(() => {
 const isFormValid = computed(() => {
   return (
     form.value.name &&
-    form.value.nickname &&
     form.value.email &&
     emailVerified.value &&
     form.value.password &&
     form.value.password === form.value.passwordConfirm &&
-    form.value.phone &&
-    form.value.agreeTerms &&
-    form.value.agreePrivacy
+    form.value.phoneNumber
   )
 })
 
+// 이메일 인증 메일 전송
 const sendVerificationEmail = async () => {
   if (!isEmailValid.value) {
     alert('올바른 이메일 주소를 입력해주세요.')
     return
   }
 
-  emailVerifying.value = true
+  emailSending.value = true
   try {
-    // TODO: 실제 API 호출로 교체
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    emailCodeSent.value = true
-    alert('인증 코드가 이메일로 전송되었습니다.')
+    const response = await authAPI.sendVerificationEmail(form.value.email)
+    emailSent.value = true
+    emailVerified.value = false
+    form.value.verificationToken = ''
+    alert(response.message || '인증 메일이 전송되었습니다. 이메일을 확인해주세요.')
   } catch (error) {
-    alert('인증 코드 전송에 실패했습니다. 다시 시도해주세요.')
-    console.error('Email verification error:', error)
+    console.error('Email send error:', error)
+    const message = error.response?.data?.message || '인증 메일 전송에 실패했습니다.'
+    alert(message)
   } finally {
-    emailVerifying.value = false
+    emailSending.value = false
   }
 }
 
-const verifyEmailCode = async () => {
-  if (!form.value.verificationCode || form.value.verificationCode.length !== 6) {
-    alert('6자리 인증 코드를 입력해주세요.')
+// 이메일 인증 토큰 검증
+const verifyEmailToken = async () => {
+  if (!form.value.verificationToken) {
+    alert('인증 토큰을 입력해주세요.')
     return
   }
 
-  verifyingCode.value = true
+  verifyingToken.value = true
   try {
-    // TODO: 실제 API 호출로 교체
-    // 목업: 인증 코드 검증 (실제로는 서버에서 검증)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // 목업: 인증 코드가 '123456'이면 성공
-    if (form.value.verificationCode === '123456') {
-      emailVerified.value = true
-      alert('이메일 인증이 완료되었습니다.')
-    } else {
-      alert('인증 코드가 올바르지 않습니다. (목업: 123456을 입력하세요)')
-    }
+    const response = await authAPI.verifyEmail(form.value.verificationToken)
+    emailVerified.value = true
+    alert(response.message || '이메일 인증이 완료되었습니다.')
   } catch (error) {
-    alert('인증 코드 확인에 실패했습니다. 다시 시도해주세요.')
-    console.error('Code verification error:', error)
+    console.error('Email verification error:', error)
+    const message = error.response?.data?.message || '인증 토큰이 유효하지 않습니다.'
+    alert(message)
+    emailVerified.value = false
   } finally {
-    verifyingCode.value = false
+    verifyingToken.value = false
   }
 }
 
+// 회원가입
 const handleSignup = async () => {
   if (!isFormValid.value) {
     if (!emailVerified.value) {
@@ -249,33 +203,27 @@ const handleSignup = async () => {
 
   loading.value = true
   try {
-    // TODO: 실제 API 호출로 교체
-    // 목업: 회원가입 성공 시뮬레이션
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    // member_id 생성 (이메일 기반으로 일관된 UUID 생성)
-    const memberId = generateUUIDFromEmail(form.value.email)
-    
-    // 사용자 정보 저장 (목업)
-    const userData = {
-      name: form.value.name,
-      nickname: form.value.nickname,
+    const response = await authAPI.signUp({
       email: form.value.email,
-      phone: form.value.phone,
-      userType: form.value.userType,
-      createdAt: new Date().toISOString()
+      password: form.value.password,
+      name: form.value.name,
+      phoneNumber: form.value.phoneNumber,
+    })
+
+    // 회원가입 성공 시 응답 데이터 저장
+    if (response.data) {
+      localStorage.setItem('member_id', response.data.memberId)
+      localStorage.setItem('user_email', response.data.email)
+      localStorage.setItem('user_name', response.data.name)
+      localStorage.setItem('user_role', form.value.userType)
     }
-    localStorage.setItem('user_data', JSON.stringify(userData))
-    localStorage.setItem('access_token', 'mock_token_' + Date.now())
-    localStorage.setItem('user_role', form.value.userType)
-    localStorage.setItem('user_email', form.value.email)
-    localStorage.setItem('member_id', memberId)
-    
-    alert('회원가입이 완료되었습니다!')
+
+    alert(response.message || '회원가입이 완료되었습니다!')
     router.push('/')
   } catch (error) {
-    alert('회원가입에 실패했습니다. 다시 시도해주세요.')
     console.error('Signup error:', error)
+    const message = error.response?.data?.message || '회원가입에 실패했습니다.'
+    alert(message)
   } finally {
     loading.value = false
   }
@@ -407,32 +355,29 @@ const handleSignup = async () => {
   cursor: not-allowed;
 }
 
-.verification-code-group {
+.verification-token-group {
   display: flex;
   gap: 8px;
   margin-top: 8px;
 }
 
-.code-input {
+.token-input {
   flex: 1;
   padding: 14px 16px;
   background: #0f0f0f;
   border: 2px solid #2a2a2a;
   border-radius: 12px;
   font-size: 15px;
-  text-align: center;
-  letter-spacing: 4px;
-  font-weight: 600;
   color: #ffffff;
 }
 
-.code-input:focus {
+.token-input:focus {
   outline: none;
   border-color: #ffffff;
   background: #151515;
 }
 
-.btn-verify-code {
+.btn-verify-token {
   padding: 14px 24px;
   background: #ffffff;
   color: #0a0a0a;
@@ -445,13 +390,13 @@ const handleSignup = async () => {
   transition: all 0.2s;
 }
 
-.btn-verify-code:hover:not(:disabled) {
+.btn-verify-token:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
   background: #f0f0f0;
 }
 
-.btn-verify-code:disabled {
+.btn-verify-token:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -577,13 +522,12 @@ const handleSignup = async () => {
     width: 100%;
   }
 
-  .verification-code-group {
+  .verification-token-group {
     flex-direction: column;
   }
 
-  .btn-verify-code {
+  .btn-verify-token {
     width: 100%;
   }
 }
 </style>
-

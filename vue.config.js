@@ -4,7 +4,7 @@ module.exports = defineConfig({
     port: 8080,  // 프론트엔드 포트 명시
     proxy: {
       '/api': {
-        target: 'http://192.168.45.135:8000',  // API Gateway
+        target: 'http://localhost:8000',  // API Gateway
         changeOrigin: true,
         logLevel: 'debug',  // ← 프록시 로그 활성화
         // pathRewrite 없음 = /api가 그대로 전달됨
