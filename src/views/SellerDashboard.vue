@@ -701,13 +701,19 @@ const categoryImages = {
 
 // 백엔드 데이터를 프론트엔드 형식으로 변환
 const transformProduct = (product) => {
+  // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지
+  let image = product.imageUrl || product.image || product.thumbnailUrl
+  if (!image || image.trim() === '') {
+    image = categoryImages[product.category] || categoryImages['PET']
+  }
+
   return {
     id: product.productId,
     title: product.name,
     currentPrice: product.price,
     originalPrice: product.price,
     category: categoryMap[product.category] || product.category,
-    image: categoryImages[product.category] || categoryImages['OTHER'],
+    image: image,
     stock: product.stock,
     description: product.description,
     originalUrl: product.originalLink,
@@ -742,11 +748,22 @@ const fetchMyProducts = async () => {
 
 // 공동구매 데이터 변환
 const transformGroupPurchase = (gp) => {
+  // 카테고리 변환 (백엔드 enum -> 한글)
+  const categoryKorean = categoryMap[gp.category] || gp.category || '기타'
+
+  // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지
+  let image = gp.imageUrl || gp.image || gp.thumbnailUrl || gp.originalUrl
+  if (!image || image.trim() === '') {
+    // category가 있으면 해당 카테고리 이미지, 없으면 기본 이미지
+    image = categoryImages[gp.category] || categoryImages[categoryKorean] || categoryImages['PET']
+  }
+
   return {
     id: gp.groupPurchaseId || gp.id,
     title: gp.title,
     description: gp.description,
     productName: gp.productName || '상품명',
+    category: categoryKorean,
     discountPrice: gp.discountedPrice || gp.discountPrice || 0,
     originalPrice: gp.price || gp.originalPrice || 0,
     minQuantity: gp.minQuantity,
@@ -755,7 +772,7 @@ const transformGroupPurchase = (gp) => {
     status: gp.status || 'OPEN',
     startDate: gp.startDate,
     endDate: gp.endDate,
-    image: categoryImages[gp.category] || categoryImages['OTHER']
+    image: image
   }
 }
 

@@ -208,6 +208,32 @@ const sortFilter = ref('')
 const expandedId = ref(null)
 const loading = ref(false)
 
+// 카테고리별 기본 이미지
+const categoryImages = {
+  'HOME': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400',
+  'FOOD': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400',
+  'HEALTH': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400',
+  'BEAUTY': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
+  'FASHION': 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400',
+  'ELECTRONICS': 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=400',
+  'KIDS': 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400',
+  'HOBBY': 'https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=400',
+  'PET': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400'
+}
+
+// 카테고리 한글 변환
+const categoryMap = {
+  'HOME': '생활 & 주방',
+  'FOOD': '식품 & 간식',
+  'HEALTH': '건강 & 헬스',
+  'BEAUTY': '뷰티',
+  'FASHION': '패션 & 의류',
+  'ELECTRONICS': '전자 & 디지털',
+  'KIDS': '유아 & 어린이',
+  'HOBBY': '취미',
+  'PET': '반려동물'
+}
+
 const isSeller = computed(() => {
   return localStorage.getItem('user_role') === 'seller'
 })
@@ -261,24 +287,37 @@ const loadGroupPurchases = async () => {
     const content = data.content || data
 
     // 백엔드 응답을 프론트엔드 형식으로 매핑
-    groupPurchases.value = Array.isArray(content) ? content.map(gp => ({
-      id: gp.groupPurchaseId || gp.id,
-      title: gp.title,
-      category: gp.category || '기타',
-      description: gp.description,
-      productName: gp.productName || '상품명',
-      seller: gp.sellerName || '판매자',
-      sellerId: gp.sellerId,
-      discountPrice: gp.discountedPrice || gp.discountPrice || 0,
-      originalPrice: gp.price || gp.originalPrice || 0,
-      minQuantity: gp.minQuantity,
-      maxQuantity: gp.maxQuantity,
-      currentCount: gp.currentQuantity || 0,
-      status: gp.status || 'OPEN',
-      startDate: gp.startDate,
-      endDate: gp.endDate,
-      createdAt: gp.createdAt
-    })) : []
+    groupPurchases.value = Array.isArray(content) ? content.map(gp => {
+      // 카테고리 변환 (백엔드 enum -> 한글)
+      const categoryKorean = categoryMap[gp.category] || gp.category || '기타'
+
+      // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지
+      let image = gp.imageUrl || gp.image || gp.thumbnailUrl || gp.originalUrl
+      if (!image || image.trim() === '') {
+        // category가 있으면 해당 카테고리 이미지, 없으면 기본 이미지
+        image = categoryImages[gp.category] || categoryImages[categoryKorean] || categoryImages['PET']
+      }
+
+      return {
+        id: gp.groupPurchaseId || gp.id,
+        title: gp.title,
+        category: categoryKorean,
+        description: gp.description,
+        productName: gp.productName || '상품명',
+        seller: gp.sellerName || '판매자',
+        sellerId: gp.sellerId,
+        discountPrice: gp.discountedPrice || gp.discountPrice || 0,
+        originalPrice: gp.price || gp.originalPrice || 0,
+        minQuantity: gp.minQuantity,
+        maxQuantity: gp.maxQuantity,
+        currentCount: gp.currentQuantity || 0,
+        status: gp.status || 'OPEN',
+        startDate: gp.startDate,
+        endDate: gp.endDate,
+        createdAt: gp.createdAt,
+        image: image
+      }
+    }) : []
   } catch (error) {
     console.error('공동구매 목록 조회 실패:', error)
     const errorMessage = error.response?.data?.message || '공동구매 목록을 불러오는데 실패했습니다.'

@@ -102,6 +102,12 @@ const categoryImages = {
 
 // 백엔드 데이터를 프론트엔드 형식으로 변환
 const transformProduct = (product) => {
+  // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지
+  let image = product.imageUrl || product.image || product.thumbnailUrl
+  if (!image || image.trim() === '') {
+    image = categoryImages[product.category] || categoryImages['PET']
+  }
+
   return {
     id: product.productId,
     title: product.name,
@@ -110,7 +116,7 @@ const transformProduct = (product) => {
     price: product.price,
     originalPrice: null,
     category: categoryMap[product.category] || product.category,
-    image: categoryImages[product.category] || categoryImages['OTHER'],
+    image: image,
     stock: product.stock,
     description: product.description,
     originalUrl: product.originalLink,

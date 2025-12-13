@@ -318,8 +318,15 @@ const getTimeRemaining = (endDate) => {
 
 // 백엔드 데이터를 프론트엔드 형식으로 변환
 const transformGroupPurchase = (gp) => {
+  // 카테고리 변환 (백엔드 enum -> 한글)
   const categoryKorean = categoryMap[gp.category] || gp.category || '기타'
-  const image = categoryImages[gp.category] || categoryImages[categoryKorean] || categoryImages['OTHER']
+
+  // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지
+  let image = gp.imageUrl || gp.image || gp.thumbnailUrl || gp.originalUrl
+  if (!image || image.trim() === '') {
+    // category가 있으면 해당 카테고리 이미지, 없으면 기본 이미지
+    image = categoryImages[gp.category] || categoryImages[categoryKorean] || categoryImages['PET']
+  }
 
   const originalPrice = gp.price || 0
   const currentPrice = gp.discountedPrice || 0
@@ -329,7 +336,7 @@ const transformGroupPurchase = (gp) => {
     id: gp.groupPurchaseId || gp.id,
     title: gp.title,
     category: categoryKorean,
-    seller: gp.sellerName || '판매자',
+    seller: gp.sellerName || gp.sellerEmail || '판매자',
     image: image,
     originalPrice: originalPrice,
     currentPrice: currentPrice,
