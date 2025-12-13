@@ -50,6 +50,7 @@ export const groupPurchaseApi = {
     getGroupPurchasesBySeller: (sellerId, page = 0, size = 10) =>
         api.get(`/purchases/seller/${sellerId}`, { params: { page, size } }),
     updateGroupPurchase: (purchaseId, data) => api.patch(`/purchases/${purchaseId}`, data),
+    deleteGroupPurchase: (purchaseId) => api.delete(`/purchases/${purchaseId}`),
 };
 
 export default api;

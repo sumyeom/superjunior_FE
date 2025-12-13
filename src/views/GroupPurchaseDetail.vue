@@ -323,14 +323,16 @@ const handleParticipate = async () => {
 const handleDelete = async () => {
   if (confirm('정말 이 공동구매를 삭제하시겠습니까?')) {
     try {
-      // TODO: 백엔드에 공동구매 삭제 API가 추가되면 여기서 호출
-      // await groupPurchaseApi.deleteGroupPurchase(props.id)
+      // 백엔드 API 호출
+      await groupPurchaseApi.deleteGroupPurchase(props.id)
+      console.log('공동구매 삭제 성공')
 
       alert('공동구매가 삭제되었습니다.')
       router.push('/group-purchases')
     } catch (error) {
       console.error('공동구매 삭제 실패:', error)
-      alert('공동구매 삭제에 실패했습니다.')
+      const errorMessage = error.response?.data?.message || '공동구매 삭제에 실패했습니다.'
+      alert(errorMessage)
     }
   }
 }
