@@ -1,12 +1,22 @@
 <template>
   <main v-if="product" class="product-detail-page">
     <div class="container">
+      <!-- 요약 영역 -->
       <section class="summary">
+        <!-- 이미지 갤러리 -->
         <div class="gallery">
           <div class="main-image">
-            <img :src="selectedImage || product.image || (product.images && product.images[0])" :alt="product.title" />
+            <img
+              :src="selectedImage || product.image || product.images?.[0]"
+              :alt="product.title"
+              @error="handleImageError"
+            />
           </div>
-          <div v-if="product.images && product.images.length > 1" class="thumbnail-list">
+
+          <div
+            v-if="product.images && product.images.length > 1"
+            class="thumbnail-list"
+          >
             <div
               v-for="(img, index) in product.images"
               :key="index"
@@ -14,62 +24,99 @@
               :class="{ active: selectedImage === img || (!selectedImage && index === 0) }"
               @click="selectedImage = img"
             >
-              <img :src="img" :alt="`${product.title} ${index + 1}`" />
+              <img :src="img" :alt="`${product.title} ${index + 1}`" @error="e => e.target.src = getDefaultImage()" />
             </div>
           </div>
         </div>
+
+        <!-- 상품 정보 -->
+        <!-- 상품 정보 -->
         <div class="info">
-          <p class="category">{{ product.category }}</p>
-          <h1>{{ product.title }}</h1>
-          <p class="subtitle">{{ product.subtitle }}</p>
-          <div class="rating">
-            ⭐ {{ product.rating }} ({{ product.reviewCount }}개 리뷰)
-          </div>
-          <div class="price-box">
-            <div>
-              <p class="current-price">₩{{ product.currentPrice.toLocaleString() }}</p>
-              <p class="original-price">정가 ₩{{ product.originalPrice.toLocaleString() }}</p>
-            </div>
-            <span class="discount">{{ product.discountRate }}% 할인</span>
-          </div>
-          <div class="progress-card">
-            <div class="progress-head">
-              <span>{{ product.currentCount }}명 참여</span>
-              <span>목표 {{ product.targetCount }}명</span>
-            </div>
-            <div class="progress-bar">
-              <div
-                class="progress-fill"
-                :style="{ width: `${Math.min(product.currentCount / product.targetCount * 100, 100)}%` }"
-              ></div>
-            </div>
-            <p class="time-left">⏰ {{ product.timeLeft }}</p>
-          </div>
-          <ul class="specs">
-            <li v-for="spec in product.specs" :key="spec">✅ {{ spec }}</li>
-          </ul>
-          <div class="actions">
-            <button class="btn btn-outline" @click="goToSeller">판매자 보기</button>
-            <button class="btn btn-primary" @click="addToCart">장바구니 담기</button>
-          </div>
-          <p class="shipping">{{ product.shipping }}</p>
-        </div>
+  <div class="info-top">
+    <p class="category">{{ product.category }}</p>
+    <h1 class="product-title">{{ product.title }}</h1>
+
+    <!-- 제목 바로 아래 가격/재고 -->
+    <p class="price-stock">
+      ₩{{ product.currentPrice.toLocaleString() }}
+      <span v-if="product.stock !== undefined" class="stock-inline">
+        · 재고 {{ product.stock.toLocaleString() }}개 남음
+      </span>
+    </p>
+  </div>
+
+  <div class="info-bottom">
+    <p v-if="product.subtitle" class="subtitle">
+      {{ product.subtitle }}
+    </p>
+
+    <ul v-if="product.specs?.length" class="specs">
+      <li v-for="spec in product.specs" :key="spec">
+        ✅ {{ spec }}
+      </li>
+    </ul>
+
+    <div class="actions">
+      <button class="btn btn-outline" @click="goToSeller">
+        판매자 보기
+      </button>
+    </div>
+  </div>
+</div>
       </section>
 
+      <!-- 상세 영역 -->
       <section class="content">
+        <!-- 상품 설명 -->
         <article class="panel description-panel">
           <h2>상품 설명</h2>
-          <p class="short-description">{{ product.description }}</p>
-          <div v-if="product.detailedDescription" class="detailed-description" v-html="product.detailedDescription"></div>
+          <p>
+            {{ product.description }}
+          </p>
+          <p class="short-description link-extra" v-if="product.originalLink">
+              <a
+                :href="product.originalLink"
+                target="_blank"
+                rel="noopener"
+              >
+                공식 사이트 바로가기 →
+              </a>
+          </p>
+          <!-- 상세 설명 / 기본 설명 -->
+          <div
+            v-if="product.detailedDescription"
+            class="detailed-description"
+            v-html="product.detailedDescription"
+          />
           <div v-else class="detailed-description">
-            <h3>제품 특징</h3>
-            <p>{{ product.description }}</p>
             <h3>사용 안내</h3>
-            <p>상품 수령 후 정품 인증을 진행해주시기 바랍니다. A/S는 구매일로부터 1년간 무상으로 제공됩니다.</p>
+            <p>
+              상품 수령 후 정품 인증을 진행해주시기 바랍니다.
+              A/S는 구매일로부터 1년간 무상 제공됩니다.
+            </p>
+
             <h3>배송 안내</h3>
-            <p>결제 완료 후 1-2일 내 발송되며, 전국 어디서나 당일 배송이 가능합니다. 배송 추적은 주문 내역에서 확인하실 수 있습니다.</p>
+            <p>
+              결제 완료 후 1~2일 내 발송되며,
+              배송 추적은 주문 내역에서 확인할 수 있습니다.
+            </p>
+          </div>
+
+          <!-- 추가 정보: 등록일 / 수정일 -->
+          <div
+            class="detailed-description-extra"
+            v-if="product.originalLink || product.createdAt || product.updatedAt"
+          >
+            <p v-if="product.createdAt">
+              등록일: {{ formatDate(product.createdAt) }}
+            </p>
+            <p v-if="product.updatedAt">
+              수정일: {{ formatDate(product.updatedAt) }}
+            </p>
           </div>
         </article>
+
+        <!-- 판매자 공지 -->
         <article class="panel">
           <h2>판매자 공지</h2>
           <ul class="notice-list">
@@ -80,6 +127,8 @@
             </li>
           </ul>
         </article>
+
+        <!-- FAQ -->
         <article class="panel">
           <h2>자주 묻는 질문</h2>
           <details v-for="item in sellerQna" :key="item.id">
@@ -90,74 +139,98 @@
       </section>
     </div>
   </main>
+
+  <!-- 상품 없음 -->
   <section v-else class="not-found container">
     <p>요청하신 상품을 찾을 수 없습니다.</p>
-    <router-link class="btn btn-primary" to="/products">상품 목록으로 이동</router-link>
+    <router-link class="btn btn-primary" to="/products">
+      상품 목록으로 이동
+    </router-link>
   </section>
 </template>
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getProductById, sellerNotices, sellerQna } from '@/data/products'
+import { sellerNotices, sellerQna } from '@/data/products'
+import api from '@/api/axios'
 
-// eslint-disable-next-line no-undef
 const props = defineProps({
   id: {
     type: String,
-    required: true
-  }
+    required: true,
+  },
 })
 
 const router = useRouter()
 const product = ref(null)
 const selectedImage = ref(null)
 
-const loadProduct = () => {
-  // 먼저 기본 샘플 상품에서 찾기
-  product.value = getProductById(props.id)
-  
-  // 없으면 localStorage의 등록된 상품에서 찾기
-  if (!product.value) {
-    const allProducts = JSON.parse(localStorage.getItem('all_products') || '[]')
-    product.value = allProducts.find(p => p.id === Number(props.id))
-  }
-  
-  // 여전히 없으면 seller_products에서 찾기
-  if (!product.value) {
-    const sellerProducts = JSON.parse(localStorage.getItem('seller_products') || '[]')
-    product.value = sellerProducts.find(p => p.id === Number(props.id))
+const getDefaultImage = () => {
+  return 'https://placehold.co/400x400/1a1a1a/666?text=No+Image'
+}
+
+const loadProduct = async () => {
+  try {
+    const response = await api.get(`/products/${props.id}`)
+    const productData = response.data.data ?? response.data
+
+    // 백엔드에서 이미지 URL이 있으면 사용, 없으면 기본 이미지
+    const productImage = productData.imageUrl || productData.image || getDefaultImage()
+    const productImages = productData.images || [productImage]
+
+    product.value = {
+      id: productData.productId,
+      title: productData.name,
+      subtitle: null,
+      category: productData.category,
+      price: productData.price,
+      currentPrice: productData.price,
+      originalPrice: productData.price,
+      description: productData.description,
+      stock: productData.stock,
+      originalLink: productData.originalLink,
+      sellerId: productData.sellerId,
+      createdAt: productData.createdAt,
+      updatedAt: productData.updatedAt,
+      image: productImage,
+      images: productImages,
+    }
+  } catch (error) {
+    console.error('상품 조회 실패:', error)
+    product.value = null
   }
 }
 
 const goToSeller = () => {
-  if (product.value && product.value.seller) {
-    // 판매자 프로필 페이지로 이동 (일반 유저용)
-    router.push({ name: 'seller-profile' })
-  } else {
-    // 판매자 대시보드로 이동 (판매자용)
-    router.push({ name: 'seller' })
-  }
-}
-
-const addToCart = () => {
   if (!product.value) return
-  const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-  cart.push({ productId: product.value.id, quantity: 1 })
-  localStorage.setItem('cart', JSON.stringify(cart))
-  router.push({ name: 'cart' })
+  router.push({ name: 'seller', params: { id: product.value.sellerId } })
 }
 
-onMounted(() => {
-  loadProduct()
-})
+const handleImageError = (e) => {
+  e.target.src = getDefaultImage()
+}
 
-watch(() => props.id, () => {
-  loadProduct()
-})
+const formatDate = (dateString) => {
+  const date = new Date(dateString)
+  return date.toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+}
+
+onMounted(loadProduct)
+
+watch(
+  () => props.id,
+  () => loadProduct()
+)
 </script>
 
 <style scoped>
+/* 기존 스타일 그대로 사용 + 설명 아래 여백만 살짝 추가 */
+
 .product-detail-page {
   background: #0a0a0a;
   min-height: 100vh;
@@ -238,6 +311,36 @@ watch(() => props.id, () => {
   border-radius: 24px;
   padding: 28px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.info-top {
+  text-align: left;
+}
+
+.stock-inline {
+  font-weight: 400;
+  color: #cccccc;
+  margin-left: 6px;
+}
+
+.info-bottom {
+  margin-top: auto;
+}
+
+.product-title {
+  color: #ffffff;
+  font-size: 32px;   /* 제목 크게 */
+  font-weight: 700;
+  margin: 8px 0 10px;
+}
+
+.price-stock {
+  margin: 0;
+  font-size: 18px;   /* 가격/재고 같은 크기 */
+  font-weight: 600;
+  color: #ffffff;
 }
 
 .info h1 {
@@ -250,16 +353,13 @@ watch(() => props.id, () => {
 .category {
   color: #ffffff;
   font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.08em;
 }
 
 .subtitle {
   color: #999;
   margin-top: 8px;
-}
-
-.rating {
-  margin: 12px 0;
-  color: #ffd43b;
 }
 
 .price-box {
@@ -273,52 +373,6 @@ watch(() => props.id, () => {
   font-size: 32px;
   font-weight: 700;
   color: #ffffff;
-}
-
-.original-price {
-  color: #666;
-  text-decoration: line-through;
-}
-
-.discount {
-  background: #2a2a2a;
-  color: #ffffff;
-  padding: 8px 12px;
-  border-radius: 12px;
-  font-weight: 600;
-}
-
-.progress-card {
-  margin: 16px 0;
-  padding: 16px;
-  border-radius: 16px;
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
-}
-
-.progress-head {
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  color: #ffffff;
-}
-
-.progress-bar {
-  height: 10px;
-  background: #2a2a2a;
-  border-radius: 999px;
-  margin: 12px 0;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: #ffffff;
-}
-
-.time-left {
-  font-size: 14px;
-  color: #999;
 }
 
 .specs {
@@ -428,15 +482,9 @@ watch(() => props.id, () => {
   color: #e0e0e0;
 }
 
-.detailed-description ul {
-  margin: 16px 0;
-  padding-left: 24px;
-}
-
-.detailed-description li {
-  margin-bottom: 8px;
-  font-size: 15px;
-  color: #e0e0e0;
+/* 상품 설명 밑 추가 정보 여백만 살짝 */
+.detailed-description-extra {
+  margin-top: 16px;
 }
 
 .notice-list {
@@ -504,6 +552,10 @@ details p {
   margin-bottom: 20px;
 }
 
+.link-extra {
+  margin-top: 48px;  /* 두 줄 정도 간격 */
+}
+
 @media (max-width: 900px) {
   .summary,
   .content {
@@ -521,4 +573,3 @@ details p {
   }
 }
 </style>
-

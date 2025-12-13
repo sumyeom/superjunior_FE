@@ -1,5 +1,5 @@
 <template>
-  <main v-if="groupPurchase" class="group-purchase-edit-page">
+  <main v-if="!loading && groupPurchase" class="group-purchase-edit-page">
     <div class="container">
       <div class="page-header">
         <h1>공동구매 수정</h1>
@@ -15,68 +15,37 @@
               id="title"
               v-model="form.title"
               type="text"
-              placeholder="공동구매 제목을 입력하세요"
+              placeholder="공동구매 제목을 입력하세요 (최대 100자)"
               required
+              maxlength="100"
             />
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="category">카테고리 *</label>
-              <select id="category" v-model="form.category" required>
-                <option value="">카테고리를 선택하세요</option>
-                <option value="전자제품">전자제품</option>
-                <option value="패션">패션</option>
-                <option value="식품">식품</option>
-                <option value="뷰티">뷰티</option>
-                <option value="홈/리빙">홈/리빙</option>
-                <option value="기타">기타</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="status">상태 *</label>
-              <select id="status" v-model="form.status" required>
-                <option value="SCHEDULED">예정됨 (SCHEDULED)</option>
-                <option value="OPEN">진행 중 (OPEN)</option>
-                <option value="SUCCESS">성공 (SUCCESS)</option>
-                <option value="FAILED">실패 (FAILED)</option>
-              </select>
-            </div>
-          </div>
           <div class="form-group">
-            <label for="description">설명 *</label>
+            <label for="description">설명</label>
             <textarea
               id="description"
               v-model="form.description"
               rows="5"
               placeholder="공동구매에 대한 상세한 설명을 작성해주세요"
-              required
             ></textarea>
           </div>
         </div>
 
         <div class="form-section">
-          <h3>상품 정보</h3>
+          <h3>상품 선택</h3>
           <div class="form-group">
-            <label for="productName">상품명 *</label>
-            <input
-              id="productName"
-              v-model="form.productName"
-              type="text"
-              placeholder="상품명을 입력하세요"
-              required
-            />
-          </div>
-          <div class="form-group">
-            <label for="productImage">상품 이미지 URL</label>
-            <input
-              id="productImage"
-              v-model="form.productImage"
-              type="url"
-              placeholder="https://example.com/image.jpg"
-            />
-            <div v-if="form.productImage" class="image-preview">
-              <img :src="form.productImage" alt="상품 이미지 미리보기" />
-            </div>
+            <label for="productId">상품 선택 *</label>
+            <select id="productId" v-model="form.productId" required>
+              <option value="">상품을 선택하세요</option>
+              <option
+                v-for="product in products"
+                :key="product.id"
+                :value="product.id"
+              >
+                {{ product.name }} (재고: {{ product.stock }})
+              </option>
+            </select>
+            <p v-if="!products.length" class="form-hint">등록된 상품이 없습니다.</p>
           </div>
         </div>
 
@@ -106,33 +75,16 @@
               />
             </div>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="originalPrice">정가 *</label>
-              <input
-                id="originalPrice"
-                v-model.number="form.originalPrice"
-                type="number"
-                placeholder="원래 가격"
-                required
-                min="0"
-              />
-            </div>
-            <div class="form-group">
-              <label for="discountPrice">할인가 *</label>
-              <input
-                id="discountPrice"
-                v-model.number="form.discountPrice"
-                type="number"
-                placeholder="할인된 가격"
-                required
-                min="0"
-              />
-            </div>
-          </div>
-          <div v-if="form.originalPrice && form.discountPrice" class="discount-info">
-            <span>할인율: {{ discountRate }}%</span>
-            <span>절약액: ₩{{ (form.originalPrice - form.discountPrice).toLocaleString() }}</span>
+          <div class="form-group">
+            <label for="discountedPrice">할인가 *</label>
+            <input
+              id="discountedPrice"
+              v-model.number="form.discountedPrice"
+              type="number"
+              placeholder="할인된 가격을 입력하세요"
+              required
+              min="0"
+            />
           </div>
         </div>
 
@@ -140,19 +92,21 @@
           <h3>기간 정보</h3>
           <div class="form-row">
             <div class="form-group">
-              <label for="startDate">시작일</label>
+              <label for="startDate">시작일 *</label>
               <input
                 id="startDate"
                 v-model="form.startDate"
                 type="datetime-local"
+                required
               />
             </div>
             <div class="form-group">
-              <label for="endDate">종료일</label>
+              <label for="endDate">종료일 *</label>
               <input
                 id="endDate"
                 v-model="form.endDate"
                 type="datetime-local"
+                required
               />
             </div>
           </div>
@@ -174,8 +128,9 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { groupPurchaseApi, productApi } from '@/api/axios'
 
 // eslint-disable-next-line no-undef
 const props = defineProps({
@@ -188,74 +143,111 @@ const props = defineProps({
 const router = useRouter()
 
 const groupPurchase = ref(null)
+const products = ref([])
 const form = ref({
   title: '',
-  category: '',
   description: '',
-  productName: '',
-  productImage: '',
+  productId: '',
   minQuantity: null,
   maxQuantity: null,
-  originalPrice: null,
-  discountPrice: null,
-  status: 'OPEN',
+  discountedPrice: null,
   startDate: '',
   endDate: ''
 })
 
 const loading = ref(false)
 
-const discountRate = computed(() => {
-  if (!form.value.originalPrice || !form.value.discountPrice) return 0
-  return Math.round(((form.value.originalPrice - form.value.discountPrice) / form.value.originalPrice) * 100)
-})
-
 const isFormValid = computed(() => {
   return (
     form.value.title &&
-    form.value.category &&
-    form.value.description &&
-    form.value.productName &&
+    form.value.productId &&
     form.value.minQuantity &&
     form.value.maxQuantity &&
-    form.value.originalPrice &&
-    form.value.discountPrice &&
-    form.value.status &&
+    form.value.discountedPrice !== null &&
+    form.value.startDate &&
+    form.value.endDate &&
     form.value.minQuantity <= form.value.maxQuantity
   )
 })
 
-const loadGroupPurchase = () => {
-  const groupPurchases = JSON.parse(localStorage.getItem('group_purchases') || '[]')
-  groupPurchase.value = groupPurchases.find((gp) => gp.id === Number(props.id))
+// datetime-local을 ISO 8601 (OffsetDateTime) 형식으로 변환
+const convertToOffsetDateTime = (datetimeLocal) => {
+  if (!datetimeLocal) return null
+  const date = new Date(datetimeLocal)
+  const offset = -date.getTimezoneOffset()
+  const offsetHours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0')
+  const offsetMinutes = String(Math.abs(offset) % 60).padStart(2, '0')
+  const offsetSign = offset >= 0 ? '+' : '-'
 
-  if (groupPurchase.value) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${offsetSign}${offsetHours}:${offsetMinutes}`
+}
+
+// OffsetDateTime을 datetime-local 형식으로 변환
+const convertFromOffsetDateTime = (offsetDateTime) => {
+  if (!offsetDateTime) return ''
+  try {
+    const date = new Date(offsetDateTime)
+    return date.toISOString().slice(0, 16)
+  } catch {
+    return ''
+  }
+}
+
+const loadGroupPurchase = async () => {
+  loading.value = true
+  try {
+    // 백엔드 API 호출
+    const response = await groupPurchaseApi.getGroupPurchaseById(props.id)
+    console.log('공동구매 조회 성공:', response.data)
+
+    const data = response.data.data || response.data
+    groupPurchase.value = data
+
     // 폼에 기존 데이터 채우기
     form.value = {
-      title: groupPurchase.value.title,
-      category: groupPurchase.value.category,
-      description: groupPurchase.value.description,
-      productName: groupPurchase.value.productName,
-      productImage: groupPurchase.value.productImage || '',
-      minQuantity: groupPurchase.value.minQuantity,
-      maxQuantity: groupPurchase.value.maxQuantity,
-      originalPrice: groupPurchase.value.originalPrice,
-      discountPrice: groupPurchase.value.discountPrice,
-      status: groupPurchase.value.status,
-      startDate: groupPurchase.value.startDate
-        ? new Date(groupPurchase.value.startDate).toISOString().slice(0, 16)
-        : '',
-      endDate: groupPurchase.value.endDate
-        ? new Date(groupPurchase.value.endDate).toISOString().slice(0, 16)
-        : ''
+      title: data.title,
+      description: data.description || '',
+      productId: data.productId,
+      minQuantity: data.minQuantity,
+      maxQuantity: data.maxQuantity,
+      discountedPrice: data.discountedPrice || data.discountPrice || 0,
+      startDate: convertFromOffsetDateTime(data.startDate),
+      endDate: convertFromOffsetDateTime(data.endDate)
     }
 
     // 권한 체크
     const currentUserEmail = localStorage.getItem('user_email')
-    if (groupPurchase.value.sellerId !== currentUserEmail) {
+    if (data.sellerId !== currentUserEmail) {
       alert('수정 권한이 없습니다.')
       router.push({ name: 'group-purchase-detail', params: { id: props.id } })
     }
+  } catch (error) {
+    console.error('공동구매 조회 실패:', error)
+    groupPurchase.value = null
+    alert('공동구매 정보를 불러오는데 실패했습니다.')
+    router.push('/group-purchases')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 판매자의 상품 목록 가져오기
+const fetchProducts = async () => {
+  try {
+    const response = await productApi.getProducts()
+    console.log('상품 목록:', response.data)
+
+    products.value = response.data.data || response.data || []
+  } catch (error) {
+    console.error('상품 목록 조회 실패:', error)
+    products.value = []
   }
 }
 
@@ -274,38 +266,60 @@ const handleSubmit = async () => {
     return
   }
 
+  // 시작일이 현재보다 과거인지 확인
+  const startDate = new Date(form.value.startDate)
+  const now = new Date()
+  if (startDate < now) {
+    alert('시작일은 현재 또는 미래여야 합니다.')
+    return
+  }
+
+  // 종료일이 시작일보다 늦은지 확인
+  const endDate = new Date(form.value.endDate)
+  if (endDate <= startDate) {
+    alert('종료일은 시작일보다 늦어야 합니다.')
+    return
+  }
+
   loading.value = true
   try {
-    // TODO: 실제 API 호출로 교체
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-
-    const groupPurchases = JSON.parse(localStorage.getItem('group_purchases') || '[]')
-    const index = groupPurchases.findIndex((gp) => gp.id === Number(props.id))
-
-    if (index !== -1) {
-      // 기존 데이터 유지하면서 수정된 필드만 업데이트
-      groupPurchases[index] = {
-        ...groupPurchases[index],
-        ...form.value,
-        updatedAt: new Date().toISOString()
-      }
-
-      localStorage.setItem('group_purchases', JSON.stringify(groupPurchases))
-      alert('공동구매가 성공적으로 수정되었습니다!')
-      router.push({ name: 'group-purchase-detail', params: { id: props.id } })
+    // 백엔드 API 스펙에 맞게 데이터 구성
+    const requestData = {
+      minQuantity: form.value.minQuantity,
+      maxQuantity: form.value.maxQuantity,
+      title: form.value.title,
+      description: form.value.description || null,
+      discountedPrice: form.value.discountedPrice,
+      startDate: convertToOffsetDateTime(form.value.startDate),
+      endDate: convertToOffsetDateTime(form.value.endDate),
+      productId: form.value.productId
     }
+
+    console.log('수정 요청 데이터:', requestData)
+
+    // API 호출
+    const response = await groupPurchaseApi.updateGroupPurchase(props.id, requestData)
+    console.log('공동구매 수정 성공:', response.data)
+
+    alert('공동구매가 성공적으로 수정되었습니다!')
+    router.push({ name: 'group-purchase-detail', params: { id: props.id } })
   } catch (error) {
-    alert('공동구매 수정에 실패했습니다. 다시 시도해주세요.')
     console.error('Group purchase update error:', error)
+    const errorMessage = error.response?.data?.message || '공동구매 수정에 실패했습니다. 다시 시도해주세요.'
+    alert(errorMessage)
   } finally {
     loading.value = false
   }
 }
 
-loadGroupPurchase()
+onMounted(() => {
+  loadGroupPurchase()
+  fetchProducts()
+})
 
 watch(() => props.id, () => {
   loadGroupPurchase()
+  fetchProducts()
 })
 </script>
 
@@ -406,6 +420,12 @@ watch(() => props.id, () => {
 
 .form-group select {
   cursor: pointer;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
 }
 
 .discount-info {

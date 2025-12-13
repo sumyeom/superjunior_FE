@@ -17,12 +17,16 @@ import SellerApplication from '../views/SellerApplication.vue'
 import SellerProductsList from '../views/SellerProductsList.vue'
 import SellerProfile from '../views/SellerProfile.vue'
 import ProductRegister from '../views/ProductRegister.vue'
+import ProductUpdate from '../views/ProductUpdate.vue'
 import UserLogin from '../views/UserLogin.vue'
 import UserSignup from '../views/UserSignup.vue'
 import GroupPurchaseCreate from '../views/GroupPurchaseCreate.vue'
 import GroupPurchaseList from '../views/GroupPurchaseList.vue'
 import GroupPurchaseDetail from '../views/GroupPurchaseDetail.vue'
 import GroupPurchaseEdit from '../views/GroupPurchaseEdit.vue'
+import PointCharge from '../views/PointCharge.vue'
+import PointChargeSuccess from '../views/PointChargeSuccess.vue'
+import PointChargeFail from '../views/PointChargeFail.vue'
 
 const routes = [
   { path: '/', name: 'home', component: HomePage },
@@ -31,6 +35,7 @@ const routes = [
   { path: '/cart', name: 'cart', component: CartPage },
   { path: '/seller', name: 'seller', component: SellerDashboard },
   { path: '/seller/products', name: 'seller-products', component: SellerProductsList },
+  { path: '/seller/products/:productId/edit', name: 'product-update', component: ProductUpdate, props: true },
   { path: '/seller/settlement', name: 'seller-settlement', component: SellerSettlement },
   { path: '/seller/application', name: 'seller-application', component: SellerApplication },
   { path: '/seller/register/product-register', name: 'product-register', component: ProductRegister },
@@ -47,7 +52,10 @@ const routes = [
   { path: '/group-purchases', name: 'group-purchases', component: GroupPurchaseList },
   { path: '/group-purchases/create', name: 'group-purchase-create', component: GroupPurchaseCreate },
   { path: '/group-purchases/:id', name: 'group-purchase-detail', component: GroupPurchaseDetail, props: true },
-  { path: '/group-purchases/:id/edit', name: 'group-purchase-edit', component: GroupPurchaseEdit, props: true }
+  { path: '/group-purchases/:id/edit', name: 'group-purchase-edit', component: GroupPurchaseEdit, props: true },
+  { path: '/point/charge', name: 'point-charge', component: PointCharge },
+  { path: '/point/charge/success', name: 'point-charge-success', component: PointChargeSuccess },
+  { path: '/point/charge/fail', name: 'point-charge-fail', component: PointChargeFail }
 ]
 
 const router = createRouter({

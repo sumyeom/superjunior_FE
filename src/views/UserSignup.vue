@@ -229,7 +229,7 @@ const handleSignup = async () => {
       // 백엔드가 토큰을 포함시키지 않는 경우, 프론트엔드에서 로그인 API 호출
       try {
         const loginResponse = await authAPI.login(form.value.email, form.value.password)
-        
+
         // 로그인 성공 시 토큰 저장
         if (loginResponse.accessToken || loginResponse.token) {
           localStorage.setItem('access_token', loginResponse.accessToken || loginResponse.token)
@@ -237,7 +237,7 @@ const handleSignup = async () => {
           // Cookie 기반 인증인 경우 더미 토큰 저장
           localStorage.setItem('access_token', 'authenticated')
         }
-        
+
         // 사용자 정보 업데이트
         if (loginResponse.email) {
           localStorage.setItem('user_email', loginResponse.email)
@@ -245,7 +245,7 @@ const handleSignup = async () => {
         if (loginResponse.role) {
           localStorage.setItem('user_role', loginResponse.role)
         }
-        
+
         window.dispatchEvent(new CustomEvent('auth-changed'))
         alert(response.message || '회원가입이 완료되었습니다! 자동으로 로그인되었습니다.')
         router.push('/')

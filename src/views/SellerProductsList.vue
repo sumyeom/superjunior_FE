@@ -52,6 +52,7 @@
             </div>
             <div class="product-actions">
               <button class="btn btn-outline" @click="viewProduct(product.id)">상세보기</button>
+              <button class="btn btn-outline" @click="editProduct(product.id)">수정</button>
               <button class="btn btn-outline btn-danger" @click="deleteProduct(product.id)">삭제</button>
             </div>
           </div>
@@ -98,6 +99,10 @@ const loadProducts = async () => {
 
 const viewProduct = (id) => {
   router.push({ name: 'product-detail', params: { id } })
+}
+
+const editProduct = (id) => {
+  router.push({ name: 'product-update', params: { productId: id } })
 }
 
 const deleteProduct = async (id) => {

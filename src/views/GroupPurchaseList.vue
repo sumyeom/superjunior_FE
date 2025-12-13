@@ -3,8 +3,8 @@
     <div class="container">
       <div class="page-header">
         <div>
-          <h1>공동구매 목록</h1>
-          <p>진행 중인 공동구매를 확인하세요</p>
+          <h1>{{ route.query.sellerId ? '내 공동구매 목록' : '공동구매 목록' }}</h1>
+          <p>{{ route.query.sellerId ? '운영 중인 공동구매를 확인하세요' : '진행 중인 공동구매를 확인하세요' }}</p>
         </div>
         <!-- <button v-if="isSeller" class="btn btn-primary" @click="goToCreate"> -->
         <button class="btn btn-primary" @click="goToCreate"> 
@@ -44,7 +44,11 @@
         </div>
       </div>
 
-      <div v-if="filteredGroupPurchases.length === 0" class="empty-state">
+      <div v-if="loading" class="empty-state">
+        <p>로딩 중...</p>
+      </div>
+
+      <div v-else-if="filteredGroupPurchases.length === 0" class="empty-state">
         <p>조건에 맞는 공동구매가 없습니다.</p>
         <button v-if="isSeller" class="btn btn-primary" @click="goToCreate">공동구매 생성하기</button>
       </div>
@@ -183,16 +187,19 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { groupPurchaseApi } from '@/api/axios'
 
 const router = useRouter()
+const route = useRoute()
 
 const groupPurchases = ref([])
 const keyword = ref('')
 const statusFilter = ref('')
 const categoryFilter = ref('')
 const expandedId = ref(null)
+const loading = ref(false)
 
 const isSeller = computed(() => {
   return localStorage.getItem('user_role') === 'seller'
@@ -226,8 +233,50 @@ const filteredGroupPurchases = computed(() => {
   return result
 })
 
-const loadGroupPurchases = () => {
-  groupPurchases.value = JSON.parse(localStorage.getItem('group_purchases') || '[]')
+const loadGroupPurchases = async () => {
+  loading.value = true
+  try {
+    const sellerId = route.query.sellerId
+
+    if (sellerId) {
+      // 판매자별 공동구매 목록 조회
+      const response = await groupPurchaseApi.getGroupPurchasesBySeller(sellerId, 0, 100)
+      console.log('판매자별 공동구매 목록:', response.data)
+
+      // 응답 구조에 따라 조정
+      const data = response.data.data || response.data
+      const content = data.content || data
+
+      // 백엔드 응답을 프론트엔드 형식으로 매핑
+      groupPurchases.value = Array.isArray(content) ? content.map(gp => ({
+        id: gp.groupPurchaseId || gp.id,
+        title: gp.title,
+        category: gp.category || '기타',
+        description: gp.description,
+        productName: gp.productName || '상품명',
+        seller: gp.sellerName || '판매자',
+        sellerId: gp.sellerId,
+        discountPrice: gp.discountedPrice || gp.discountPrice || 0,
+        originalPrice: gp.price || gp.originalPrice || 0,
+        minQuantity: gp.minQuantity,
+        maxQuantity: gp.maxQuantity,
+        currentCount: gp.currentQuantity || 0,
+        status: gp.status || 'OPEN',
+        startDate: gp.startDate,
+        endDate: gp.endDate,
+        createdAt: gp.createdAt
+      })) : []
+    } else {
+      // TODO: 전체 공동구매 목록 조회 API가 필요합니다
+      // 현재는 localStorage에서 가져옴
+      groupPurchases.value = JSON.parse(localStorage.getItem('group_purchases') || '[]')
+    }
+  } catch (error) {
+    console.error('공동구매 목록 조회 실패:', error)
+    groupPurchases.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
 const search = () => {
@@ -393,6 +442,11 @@ const getOrderStatusText = (status) => {
 }
 
 onMounted(() => {
+  loadGroupPurchases()
+})
+
+// 쿼리 파라미터가 변경될 때 데이터 재로드
+watch(() => route.query.sellerId, () => {
   loadGroupPurchases()
 })
 </script>

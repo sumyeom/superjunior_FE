@@ -19,37 +19,30 @@
               required
             />
           </div>
-          <div class="form-group">
-            <label for="subtitle">부제목</label>
-            <input
-              id="subtitle"
-              v-model="form.subtitle"
-              type="text"
-              placeholder="상품에 대한 간단한 설명"
-            />
-          </div>
           <div class="form-row">
             <div class="form-group">
               <label for="category">카테고리 *</label>
               <select id="category" v-model="form.category" required>
                 <option value="">카테고리를 선택하세요</option>
-                <option value="전자제품">전자제품</option>
-                <option value="패션">패션</option>
-                <option value="식품">식품</option>
-                <option value="뷰티">뷰티</option>
-                <option value="홈/리빙">홈/리빙</option>
-                <option value="기타">기타</option>
+                <option value="ELECTRONICS">전자제품</option>
+                <option value="FASHION">패션</option>
+                <option value="FOOD">식품</option>
+                <option value="BEAUTY">뷰티</option>
+                <option value="HOME_LIVING">홈/리빙</option>
+                <option value="BOOK">도서</option>
+                <option value="SPORTS">스포츠</option>
+                <option value="OTHER">기타</option>
               </select>
             </div>
             <div class="form-group">
-              <label for="targetCount">목표 참여 인원 *</label>
+              <label for="stock">재고 수량 *</label>
               <input
-                id="targetCount"
-                v-model.number="form.targetCount"
+                id="stock"
+                v-model.number="form.stock"
                 type="number"
-                placeholder="예: 50"
+                placeholder="재고 수량"
                 required
-                min="1"
+                min="0"
               />
             </div>
           </div>
@@ -57,74 +50,30 @@
 
         <div class="form-section">
           <h3>가격 정보</h3>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="originalPrice">정가 *</label>
-              <input
-                id="originalPrice"
-                v-model.number="form.originalPrice"
-                type="number"
-                placeholder="원래 가격"
-                required
-                min="0"
-              />
-            </div>
-            <div class="form-group">
-              <label for="currentPrice">공동구매 가격 *</label>
-              <input
-                id="currentPrice"
-                v-model.number="form.currentPrice"
-                type="number"
-                placeholder="할인된 가격"
-                required
-                min="0"
-              />
-            </div>
-          </div>
-          <div v-if="form.originalPrice && form.currentPrice" class="discount-info">
-            <span>할인율: {{ discountRate }}%</span>
+          <div class="form-group">
+            <label for="currentPrice">상품 가격 *</label>
+            <input
+              id="currentPrice"
+              v-model.number="form.currentPrice"
+              type="number"
+              placeholder="상품 가격을 입력하세요"
+              required
+              min="0"
+            />
           </div>
         </div>
 
         <div class="form-section">
-          <h3>상품 이미지</h3>
+          <h3>상품 원본 링크</h3>
           <div class="form-group">
-            <label>대표 이미지 *</label>
+            <label for="originalUrl">상품 원본 URL *</label>
             <input
+              id="originalUrl"
               type="url"
-              v-model="form.mainImage"
-              placeholder="이미지 URL을 입력하세요"
+              v-model="form.originalUrl"
+              placeholder="상품 원본 페이지 URL을 입력하세요"
               required
             />
-            <div v-if="form.mainImage" class="image-preview">
-              <img :src="form.mainImage" alt="대표 이미지 미리보기" />
-            </div>
-          </div>
-          <div class="form-group">
-            <label>추가 이미지 (최대 5개)</label>
-            <div v-for="(img, index) in form.additionalImages" :key="index" class="image-input-row">
-              <input
-                type="url"
-                v-model="form.additionalImages[index]"
-                placeholder="추가 이미지 URL"
-              />
-              <button
-                v-if="form.additionalImages.length > 1"
-                type="button"
-                class="btn-remove"
-                @click="removeImage(index)"
-              >
-                삭제
-              </button>
-            </div>
-            <button
-              v-if="form.additionalImages.length < 5"
-              type="button"
-              class="btn-add-image"
-              @click="addImageField"
-            >
-              + 이미지 추가
-            </button>
           </div>
         </div>
 
@@ -135,56 +84,10 @@
             <textarea
               id="description"
               v-model="form.description"
-              rows="5"
+              rows="8"
               placeholder="상품에 대한 상세한 설명을 작성해주세요"
               required
             ></textarea>
-          </div>
-          <div class="form-group">
-            <label for="detailedDescription">상세 설명 (HTML 지원)</label>
-            <textarea
-              id="detailedDescription"
-              v-model="form.detailedDescription"
-              rows="8"
-              placeholder="HTML 태그를 사용하여 더 자세한 설명을 작성할 수 있습니다"
-            ></textarea>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <h3>상품 옵션</h3>
-          <div class="form-group">
-            <label>스펙/옵션 (줄바꿈으로 구분)</label>
-            <textarea
-              v-model="specsText"
-              rows="4"
-              placeholder="예:&#10;스토리지 256GB&#10;색상: 네이비 티타늄&#10;정품 등록 보장"
-            ></textarea>
-            <p class="form-hint">각 항목은 줄바꿈으로 구분됩니다</p>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <h3>배송 정보</h3>
-          <div class="form-group">
-            <label for="shipping">배송 안내 *</label>
-            <input
-              id="shipping"
-              v-model="form.shipping"
-              type="text"
-              placeholder="예: 무료배송 / 전국 당일 발송"
-              required
-            />
-          </div>
-          <div class="form-group">
-            <label for="timeLeft">마감 시간 *</label>
-            <input
-              id="timeLeft"
-              v-model="form.timeLeft"
-              type="text"
-              placeholder="예: 3일 남음"
-              required
-            />
           </div>
         </div>
 
@@ -208,51 +111,25 @@ const router = useRouter()
 
 const form = ref({
   title: '',
-  subtitle: '',
   category: '',
-  originalPrice: null,
   currentPrice: null,
-  mainImage: '',
-  additionalImages: [''],
-  description: '',
-  detailedDescription: '',
-  specs: [],
-  shipping: '',
-  timeLeft: '',
-  targetCount: null
+  stock: null,
+  originalUrl: '',
+  description: ''
 })
 
-const specsText = ref('')
 const loading = ref(false)
-
-const discountRate = computed(() => {
-  if (!form.value.originalPrice || !form.value.currentPrice) return 0
-  return Math.round(((form.value.originalPrice - form.value.currentPrice) / form.value.originalPrice) * 100)
-})
 
 const isFormValid = computed(() => {
   return (
     form.value.title &&
     form.value.category &&
-    form.value.originalPrice &&
     form.value.currentPrice &&
-    form.value.mainImage &&
-    form.value.description &&
-    form.value.shipping &&
-    form.value.timeLeft &&
-    form.value.targetCount
+    form.value.stock !== null &&
+    form.value.originalUrl &&
+    form.value.description
   )
 })
-
-const addImageField = () => {
-  if (form.value.additionalImages.length < 5) {
-    form.value.additionalImages.push('')
-  }
-}
-
-const removeImage = (index) => {
-  form.value.additionalImages.splice(index, 1)
-}
 
 const handleCancel = () => {
   if (confirm('작성 중인 내용이 사라집니다. 정말 취소하시겠습니까?')) {
@@ -266,42 +143,28 @@ const handleSubmit = async () => {
     return
   }
 
-  // 스펙 텍스트를 배열로 변환
-  form.value.specs = specsText.value
-    .split('\n')
-    .map(s => s.trim())
-    .filter(s => s.length > 0)
-
   loading.value = true
   try {
-    // API 요청 데이터 구성
+    // 백엔드 API 스펙에 맞게 데이터 구성
     const requestData = {
-      title: form.value.title,
-      subtitle: form.value.subtitle || null,
+      name: form.value.title,
+      price: form.value.currentPrice,
       category: form.value.category,
-      originalPrice: form.value.originalPrice,
-      currentPrice: form.value.currentPrice,
-      mainImage: form.value.mainImage,
-      additionalImages: form.value.additionalImages.filter(img => img.trim().length > 0),
       description: form.value.description,
-      detailedDescription: form.value.detailedDescription || null,
-      specs: form.value.specs,
-      shipping: form.value.shipping,
-      timeLeft: form.value.timeLeft,
-      targetCount: form.value.targetCount
+      stock: form.value.stock,
+      originalUrl: form.value.originalUrl
     }
-    
+
     // API 호출
     const response = await productApi.createProduct(requestData)
-    
-    if (response.status === 201 || response.data) {
-      alert('상품이 성공적으로 등록되었습니다!')
-      router.push('/seller/products')
-    }
+    console.log('상품 등록 성공:', response.data)
+
+    alert('상품이 성공적으로 등록되었습니다!')
+    router.push('/seller/products')
   } catch (error) {
+    console.error('Product registration error:', error)
     const errorMessage = error.response?.data?.message || '상품 등록에 실패했습니다. 다시 시도해주세요.'
     alert(errorMessage)
-    console.error('Product registration error:', error)
   } finally {
     loading.value = false
   }

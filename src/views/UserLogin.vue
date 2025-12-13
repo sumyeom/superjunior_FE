@@ -4,7 +4,7 @@
       <div class="login-card">
         <div class="login-header">
           <h1>로그인</h1>
-          <p>0982 공구팔이에 오신 것을 환영합니다</p>
+          <p>0909 공구공구에 오신 것을 환영합니다</p>
         </div>
         <form @submit.prevent="handleLogin" class="login-form">
           <div class="form-group">
