@@ -24,6 +24,12 @@
             <button class="btn btn-outline" @click="search">검색</button>
           </div>
           <div class="filter-actions">
+            <select v-model="sortFilter" class="sort-filter" @change="loadGroupPurchases">
+              <option value="">최신순</option>
+              <option value="currentQuantity,desc">인기순 (참여자 많은 순)</option>
+              <option value="endDate,asc">마감 직전 순</option>
+              <option value="createdAt,desc">등록순 (최신)</option>
+            </select>
             <select v-model="statusFilter" class="status-filter">
               <option value="">전체 상태</option>
               <option value="SCHEDULED">예정됨</option>
@@ -198,6 +204,7 @@ const groupPurchases = ref([])
 const keyword = ref('')
 const statusFilter = ref('')
 const categoryFilter = ref('')
+const sortFilter = ref('')
 const expandedId = ref(null)
 const loading = ref(false)
 
@@ -241,11 +248,11 @@ const loadGroupPurchases = async () => {
     let response
     if (sellerId) {
       // 판매자별 공동구매 목록 조회
-      response = await groupPurchaseApi.getGroupPurchasesBySeller(sellerId, 0, 100)
+      response = await groupPurchaseApi.getGroupPurchasesBySeller(sellerId, 0, 100, sortFilter.value)
       console.log('판매자별 공동구매 목록:', response.data)
     } else {
       // 내 공동구매 목록 조회 (판매자 전용)
-      response = await groupPurchaseApi.getMyGroupPurchases()
+      response = await groupPurchaseApi.getMyGroupPurchases(sortFilter.value)
       console.log('내 공동구매 목록:', response.data)
     }
 
@@ -525,6 +532,7 @@ watch(() => route.query.sellerId, () => {
   gap: 8px;
 }
 
+.sort-filter,
 .status-filter,
 .category-filter {
   padding: 12px 16px;
@@ -534,6 +542,13 @@ watch(() => route.query.sellerId, () => {
   font-size: 14px;
   color: #ffffff;
   cursor: pointer;
+}
+
+.sort-filter:focus,
+.status-filter:focus,
+.category-filter:focus {
+  outline: none;
+  border-color: #ffffff;
 }
 
 .empty-state {

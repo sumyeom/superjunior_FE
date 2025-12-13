@@ -88,16 +88,26 @@ export const productApi = {
 export const groupPurchaseApi = {
     createGroupPurchase: (data) => api.post("/purchases", data),
     getGroupPurchaseById: (purchaseId) => api.get(`/purchases/${purchaseId}`),
-    getMyGroupPurchases: () => {
+    getAllGroupPurchases: (page = 0, size = 100, sort = null) => {
+        const params = { page, size }
+        if (sort) params.sort = sort
+        return api.get("/purchases", { params }) // 전체 공동구매 목록 조회
+    },
+    getMyGroupPurchases: (sort = null) => {
         // 내 공동구매 목록 조회 (판매자 전용)
         const memberId = localStorage.getItem('member_id')
         if (!memberId) {
             return Promise.reject(new Error('로그인이 필요합니다.'))
         }
-        return api.get(`/purchases/seller/${memberId}`, { params: { page: 0, size: 100 } })
+        const params = { page: 0, size: 100 }
+        if (sort) params.sort = sort
+        return api.get(`/purchases/seller/${memberId}`, { params })
     },
-    getGroupPurchasesBySeller: (sellerId, page = 0, size = 10) =>
-        api.get(`/purchases/seller/${sellerId}`, { params: { page, size } }),
+    getGroupPurchasesBySeller: (sellerId, page = 0, size = 10, sort = null) => {
+        const params = { page, size }
+        if (sort) params.sort = sort
+        return api.get(`/purchases/seller/${sellerId}`, { params })
+    },
     updateGroupPurchase: (purchaseId, data) => api.patch(`/purchases/${purchaseId}`, data),
     deleteGroupPurchase: (purchaseId) => api.delete(`/purchases/${purchaseId}`),
 };
