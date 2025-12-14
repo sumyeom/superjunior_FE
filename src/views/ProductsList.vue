@@ -176,6 +176,27 @@
         </div>
       </div>
     </section>
+    <div v-if="totalPages > 1" class="pagination">
+      <button
+        class="page-btn"
+        :disabled="page === 0"
+        @click="goToPage(page - 1)"
+      >
+        이전
+      </button>
+
+      <span class="page-info">
+        {{ page + 1 }} / {{ totalPages }}
+      </span>
+
+      <button
+        class="page-btn"
+        :disabled="page + 1 >= totalPages"
+        @click="goToPage(page + 1)"
+      >
+        다음
+      </button>
+    </div>
   </main>
 </template>
 
@@ -336,15 +357,18 @@ const loadProducts = async () => {
   loading.value = true
   try {
     const res = await groupPurchaseApi.searchGroupPurchases({
-      keyword: keyword.value,
-      status: selectedStatus.value,
-      category: selectedCategory.value,
-      sort: toApiSort(sortBy.value), // ✅ 정렬 적용
-      size: 100
-    })
+                         keyword: keyword.value,
+                         status: selectedStatus.value,
+                         category: selectedCategory.value,
+                         page: page.value,
+                         size: size.value,
+                         sort: toApiSort(sortBy.value)
+                       })
 
-    const content = res.data?.data?.content ?? []
-    products.value = content.map(mapToProductCard)
+    const pageData = res.data?.data
+
+    products.value = (pageData?.content ?? []).map(mapToProductCard)
+    totalPages.value = pageData?.totalPages ?? 0
   } catch (e) {
     console.error('공동구매 검색 실패', e)
     products.value = []
@@ -352,6 +376,29 @@ const loadProducts = async () => {
     loading.value = false
   }
 }
+
+/* ======================
+ * PAGING
+ * ====================== */
+const page = ref(0)          // 현재 페이지 (0부터 시작)
+const size = ref(9)         // 페이지 사이즈
+const totalPages = ref(0)
+
+const goToPage = (nextPage) => {
+  if (nextPage < 0 || nextPage >= totalPages.value) return
+  page.value = nextPage
+  loadProducts()
+}
+
+const resetPageAndReload = () => {
+  page.value = 0
+  loadProducts()
+}
+
+watch(sortBy, resetPageAndReload)
+watch(selectedStatus, resetPageAndReload)
+watch(selectedCategory, resetPageAndReload)
+watch(keyword, resetPageAndReload)
 
 /* ======================
  * EVENTS
@@ -749,6 +796,46 @@ onMounted(loadProducts)
   color: #999;
   margin-bottom: 16px;
 }
+
+/* ===== Pagination ===== */
+  .pagination {
+    margin-top: 48px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+  }
+
+  /* 버튼 */
+  .page-btn {
+    padding: 10px 18px;
+    border-radius: 999px;
+    border: 1px solid #2a2a2a;
+    background: #1a1a1a;
+    color: #ffffff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .page-btn:hover:not(:disabled) {
+    background: #ffffff;
+    color: #0a0a0a;
+    border-color: #ffffff;
+  }
+
+  .page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* 페이지 정보 */
+  .page-info {
+    min-width: 80px;
+    text-align: center;
+    font-weight: 600;
+    color: #ffffff;
+  }
 
 @media (max-width: 768px) {
   .filter-row {
