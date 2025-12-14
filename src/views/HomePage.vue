@@ -353,13 +353,13 @@ const isUrgent = (endDate) => {
 
 //진행 중인 공동구매 중 참여 수량이 제일 많은 항목 불러오기
 const fetchPopularProducts = async () => {
-  const response = await groupPurchaseApi.getAllGroupPurchases(0, 100, 'currentQuantity,desc')
-  const data = response.data.data || response.data
-  const content = data.content || data
+  const res = await groupPurchaseApi.searchGroupPurchases({
+    status: 'OPEN',
+    sort: 'currentQuantity,desc',
+    size: 3
+  })
 
-  // OPEN 상태만 필터링하고 상위 6개만 반환
-  const openItems = Array.isArray(content) ? content.filter(item => item.status === 'OPEN') : []
-  return openItems.slice(0, 6)
+  return res.data.data.content
 }
 
 //형식 맞추기
@@ -399,26 +399,26 @@ const mapToProductCard = (gp) => {
 const endingProducts = ref([])
 
 const fetchEndingProducts = async () => {
-  const response = await groupPurchaseApi.getAllGroupPurchases(0, 100, 'endDate,asc')
-  const data = response.data.data || response.data
-  const content = data.content || data
+  const res = await groupPurchaseApi.searchGroupPurchases({
+    status: 'OPEN',
+    sort: 'endDate,asc',
+    size: 3
+  })
 
-  // OPEN 상태만 필터링하고 상위 6개만 반환
-  const openItems = Array.isArray(content) ? content.filter(item => item.status === 'OPEN') : []
-  return openItems.slice(0, 6)
+  return res.data.data.content
 }
 
 //최신 공동구매
 const newProducts = ref([])
 
 const fetchNewProducts = async () => {
-  const response = await groupPurchaseApi.getAllGroupPurchases(0, 100, 'startDate,desc')
-  const data = response.data.data || response.data
-  const content = data.content || data
+  const res = await groupPurchaseApi.searchGroupPurchases({
+    status: 'OPEN',
+    sort: 'startDate,desc',
+    size: 3
+  })
 
-  // OPEN 상태만 필터링하고 상위 6개만 반환
-  const openItems = Array.isArray(content) ? content.filter(item => item.status === 'OPEN') : []
-  return openItems.slice(0, 6)
+  return res.data.data.content
 }
 
 const onSearch = () => {

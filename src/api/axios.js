@@ -126,6 +126,19 @@ export const groupPurchaseApi = {
     },
     updateGroupPurchase: (purchaseId, data) => api.patch(`/purchases/${purchaseId}`, data),
     deleteGroupPurchase: (purchaseId) => api.delete(`/purchases/${purchaseId}`),
+    searchGroupPurchases: ({
+            keyword = '',
+            status = 'OPEN',
+            category = '',
+            page = 0,
+            size = 10,
+            sort = null
+        } = {}) => {
+            const params = { keyword, status, category, page, size }
+            if (sort) params.sort = sort
+
+            return api.get(`/searches/purchase/search`, { params })
+        },
 };
 
 export default api;
