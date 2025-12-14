@@ -1,22 +1,19 @@
 <template>
   <main class="products-page">
+    <!-- HERO -->
     <section class="page-hero">
       <div class="container">
         <div>
           <p class="eyebrow">공동구매 마켓</p>
-          <h1>지금 인기 있는 상품을 만나보세요</h1>
+          <h1>공동구매 상품 목록</h1>
           <p class="subtitle">
-            카테고리, 할인율, 마감 임박 순으로 필터링하고 바로 장바구니에 담을 수 있어요.
+            진행 상태별로 공동구매 상품을 확인할 수 있습니다.
           </p>
         </div>
         <div class="stats">
           <div class="stat">
-            <strong>{{ sampleProductsList.length }}</strong>
-            <span>등록된 상품</span>
-          </div>
-          <div class="stat">
-            <strong>₩{{ totalSavings.toLocaleString() }}</strong>
-            <span>예상 절약액</span>
+            <strong>{{ filteredProducts.length }}</strong>
+            <span>상품 수</span>
           </div>
           <div class="stat">
             <strong>{{ participantsCount.toLocaleString() }}명</strong>
@@ -26,21 +23,24 @@
       </div>
     </section>
 
+    <!-- FILTER -->
     <section class="filters">
       <div class="container">
         <div class="filter-row">
+          <!-- STATUS TABS -->
           <div class="chips">
             <button
               v-for="section in primarySections"
               :key="section.id"
-              type="button"
               class="chip"
-              :class="{ active: selectedSection === section.id }"
-              @click="setSection(section.id)"
+              :class="{ active: selectedStatus === section.id }"
+              @click="setStatus(section.id)"
             >
               {{ section.label }}
             </button>
           </div>
+
+          <!-- SEARCH + CATEGORY -->
           <div class="filter-actions">
             <div class="search">
               <input
@@ -51,42 +51,34 @@
               />
               <button class="btn btn-outline" @click="search">검색</button>
             </div>
+
             <div class="category-select">
               <label>
                 카테고리
                 <select v-model="selectedCategory">
-                  <option :value="null">전체</option>
-                  <option v-for="category in categories.slice(1)" :key="category.id" :value="category.id">
-                    {{ category.icon }} {{ category.name }}
+                  <option value="">전체</option>
+                  <option
+                    v-for="category in categories"
+                    :key="category.value"
+                    :value="category.value"
+                  >
+                    {{ category.icon }} {{ category.label }}
                   </option>
                 </select>
               </label>
             </div>
           </div>
         </div>
-        <div class="filter-row secondary">
-          <div class="chips">
-            <button
-              v-for="section in secondarySections"
-              :key="section.id"
-              type="button"
-              class="chip"
-              :class="{ active: selectedSection === section.id }"
-              @click="setSection(section.id)"
-            >
-              {{ section.label }}
-            </button>
-          </div>
-        </div>
       </div>
     </section>
 
+    <!-- GRID -->
     <section class="product-grid-section">
       <div class="container">
-        <div v-if="filteredProducts.length === 0" class="empty-state">
-          <p>조건에 맞는 상품이 없습니다. 다른 필터를 시도해 주세요.</p>
-          <button class="btn btn-primary" @click="resetFilters">필터 초기화</button>
+        <div v-if="filteredProducts.length === 0 && !loading" class="empty-state">
+          <p>조건에 맞는 상품이 없습니다.</p>
         </div>
+
         <div v-else class="product-grid">
           <article
             v-for="product in filteredProducts"
@@ -95,14 +87,19 @@
             @click="goToDetail(product.id)"
           >
             <div class="image-wrapper">
-              <img :src="product.image" :alt="product.title" loading="lazy" />
+              <img :src="product.image" :alt="product.title" />
               <div class="badge-group">
-                <span v-for="badge in product.badges" :key="badge" class="badge">
+                <span
+                  v-for="badge in product.badges"
+                  :key="badge"
+                  class="badge"
+                >
                   {{ badge }}
                 </span>
               </div>
+
+              <!-- WISHLIST -->
               <button
-                type="button"
                 class="bookmark"
                 :class="{ active: wishlist.has(product.id) }"
                 @click.stop="toggleWishlist(product.id)"
@@ -110,19 +107,24 @@
                 {{ wishlist.has(product.id) ? '★' : '☆' }}
               </button>
             </div>
+
             <div class="card-body">
               <p class="category">{{ product.category }}</p>
               <h2>{{ product.title }}</h2>
               <p class="subtitle">{{ product.subtitle }}</p>
+
               <div class="price-row">
-                <div>
-                  <p class="current-price">₩{{ product.currentPrice.toLocaleString() }}</p>
-                  <p class="meta">
-                    <span class="discount">{{ product.discountRate }}% OFF</span>
-                    <span class="original">₩{{ product.originalPrice.toLocaleString() }}</span>
-                  </p>
-                </div>
+                <p class="current-price">
+                  ₩{{ product.currentPrice.toLocaleString() }}
+                </p>
+                <p class="meta">
+                  <span class="discount">{{ product.discountRate }}% OFF</span>
+                  <span class="original">
+                    ₩{{ product.originalPrice.toLocaleString() }}
+                  </span>
+                </p>
               </div>
+
               <div class="progress">
                 <div class="progress-head">
                   <span>{{ product.currentCount }}명 참여</span>
@@ -135,11 +137,10 @@
                   ></div>
                 </div>
               </div>
+
               <div class="card-footer">
                 <span class="time">⏰ {{ product.timeLeft }}</span>
-                <button class="btn btn-primary" @click.stop="addToCart(product)">
-                  장바구니 담기
-                </button>
+                <button class="btn btn-primary">장바구니 담기</button>
               </div>
             </div>
           </article>
@@ -151,265 +152,149 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { groupPurchaseApi } from '@/api/axios'
 
 const router = useRouter()
-const route = useRoute()
 
+/* ======================
+ * 상태
+ * ====================== */
 const sampleProductsList = ref([])
+const filteredProducts = computed(() => sampleProductsList.value)
+
 const keyword = ref('')
-const selectedSection = ref('popular')
-const selectedCategory = ref(null)
-const wishlist = ref(new Set())
+const selectedCategory = ref('')
+const selectedStatus = ref('OPEN')
 const loading = ref(false)
 
-const categories = [
-  { id: 1, name: '전체', icon: '✨' },
-  { id: 2, name: '생활 & 주방', icon: '🏠' },
-  { id: 3, name: '식품 & 간식', icon: '🍎' },
-  { id: 4, name: '건강 & 헬스', icon: '💪' },
-  { id: 5, name: '뷰티', icon: '💄' },
-  { id: 6, name: '패션 & 의류', icon: '👟' },
-  { id: 7, name: '전자 & 디지털', icon: '📱' },
-  { id: 8, name: '유아 & 어린이', icon: '👶' },
-  { id: 9, name: '취미', icon: '🎨' },
-  { id: 10, name: '반려동물', icon: '🐾' }
-]
+/* ======================
+ * 위시리스트 (유지)
+ * ====================== */
+const wishlist = ref(new Set())
 
+const toggleWishlist = (productId) => {
+  const next = new Set(wishlist.value)
+  next.has(productId) ? next.delete(productId) : next.add(productId)
+  wishlist.value = next
+}
+
+/* ======================
+ * 상태 탭
+ * ====================== */
 const primarySections = [
-  { id: 'popular', label: '인기' },
-  { id: 'new', label: '신규' },
-  { id: 'ending', label: '마감 임박' },
-  { id: 'discount', label: '할인율 높은 순' }
+  { id: 'OPEN', label: '진행중' },
+  { id: 'SCHEDULED', label: '진행전' },
+  { id: 'SUCCESS', label: '완료' },
+  { id: 'FAILED', label: '실패' }
 ]
 
-const secondarySections = [
-  { id: 'priceLow', label: '가격 낮은 순' },
-  { id: 'priceHigh', label: '가격 높은 순' }
+/* ======================
+ * 카테고리
+ * ====================== */
+const categories = [
+  { value: 'HOME', label: '생활 & 주방', icon: '🏠' },
+  { value: 'FOOD', label: '식품 & 간식', icon: '🍎' },
+  { value: 'HEALTH', label: '건강 & 헬스', icon: '💪' },
+  { value: 'BEAUTY', label: '뷰티', icon: '💄' },
+  { value: 'FASHION', label: '패션 & 의류', icon: '👟' },
+  { value: 'ELECTRONICS', label: '전자 & 디지털', icon: '📱' },
+  { value: 'KIDS', label: '유아 & 어린이', icon: '👶' },
+  { value: 'HOBBY', label: '취미', icon: '🎨' },
+  { value: 'PET', label: '반려동물', icon: '🐾' }
 ]
 
-const sections = [...primarySections, ...secondarySections]
+/* ======================
+ * 계산
+ * ====================== */
+const participantsCount = computed(() =>
+  sampleProductsList.value.reduce((sum, p) => sum + p.currentCount, 0)
+)
 
-// 카테고리별 기본 이미지
-const categoryImages = {
-  'HOME': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=400',
-  'FOOD': 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400',
-  'HEALTH': 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400',
-  'BEAUTY': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400',
-  'FASHION': 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400',
-  'ELECTRONICS': 'https://images.unsplash.com/photo-1468495244123-6c6c332eeece?w=400',
-  'KIDS': 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400',
-  'HOBBY': 'https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=400',
-  'PET': 'https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=400'
-}
-
-// 카테고리 한글 변환
-const categoryMap = {
-  'HOME': '생활 & 주방',
-  'FOOD': '식품 & 간식',
-  'HEALTH': '건강 & 헬스',
-  'BEAUTY': '뷰티',
-  'FASHION': '패션 & 의류',
-  'ELECTRONICS': '전자 & 디지털',
-  'KIDS': '유아 & 어린이',
-  'HOBBY': '취미',
-  'PET': '반려동물'
-}
-
-// 남은 시간 계산
+/* ======================
+ * 시간 계산
+ * ====================== */
 const getTimeRemaining = (endDate) => {
-  if (!endDate) return '기간 미정'
-
-  const now = new Date()
-  const end = new Date(endDate)
-  const diff = end - now
-
-  if (diff < 0) return '종료됨'
-
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-
-  if (days > 0) return `${days}일 ${hours}시간 남음`
-  if (hours > 0) return `${hours}시간 ${minutes}분 남음`
-  return `${minutes}분 남음`
+  const diff = new Date(endDate) - new Date()
+  if (diff <= 0) return '종료됨'
+  const h = Math.floor(diff / 36e5)
+  const d = Math.floor(h / 24)
+  return d > 0 ? `${d}일 ${h % 24}시간 남음` : `${h}시간 남음`
 }
 
-// 백엔드 데이터를 프론트엔드 형식으로 변환
-const transformGroupPurchase = (gp) => {
-  // 디버그: 백엔드에서 받은 카테고리 확인
-  console.log('백엔드 카테고리:', gp.category, '| 상품:', gp.title)
-
-  // 카테고리 변환 (백엔드 enum -> 한글)
-  const categoryKorean = categoryMap[gp.category] || gp.category || '기타'
-
-  // 카테고리 매핑 안 되면 경고
-  if (!categoryMap[gp.category]) {
-    console.warn('⚠️ 카테고리 매핑 실패:', gp.category, '→ 기본값 사용:', categoryKorean)
-  }
-
-  // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지
-  let image = gp.imageUrl || gp.image || gp.thumbnailUrl || gp.originalUrl
-  if (!image || image.trim() === '') {
-    // category가 있으면 해당 카테고리 이미지, 없으면 기본 이미지
-    image = categoryImages[gp.category] || categoryImages['PET']
-    console.log('이미지 없음 → 카테고리 기본 이미지 사용:', image)
-  }
-
-  const originalPrice = gp.price || 0
-  const currentPrice = gp.discountedPrice || 0
-  const discountRate = originalPrice > 0 ? Math.round((1 - currentPrice / originalPrice) * 100) : 0
-
-  // 마감 임박 판단 (24시간 이내)
-  const timeLeft = getTimeRemaining(gp.endDate)
-  const isUrgent = timeLeft.includes('시간') && !timeLeft.includes('일')
-
+/* ======================
+ * ES → 카드 변환
+ * ====================== */
+const transformGroupPurchase = (doc) => {
+  const embedded = doc.productDocumentEmbedded || {}
   const badges = []
-  if (isUrgent) badges.push('마감임박')
-  if (discountRate >= 30) badges.push(`${discountRate}% 할인`)
+
+  if (doc.discountRate >= 30) badges.push(`${doc.discountRate}% 할인`)
+  if (doc.status === 'SCHEDULED') badges.push('오픈예정')
+  if (doc.status === 'SUCCESS') badges.push('완료')
+  if (doc.status === 'FAILED') badges.push('실패')
 
   return {
-    id: gp.groupPurchaseId || gp.id,
-    title: gp.title,
-    subtitle: gp.description?.substring(0, 50) || '',
-    category: categoryKorean,
-    image: image,
-    originalPrice: originalPrice,
-    currentPrice: currentPrice,
-    discountRate: discountRate,
-    currentCount: gp.currentQuantity || 0,
-    targetCount: gp.maxQuantity || 0,
-    timeLeft: timeLeft,
-    badges: badges
+    id: doc.groupPurchaseId,
+    title: doc.title,
+    subtitle: doc.description || '',
+    category: embedded.category || '',
+    image: embedded.originalUrl || '',
+    originalPrice: embedded.price || 0,
+    currentPrice: doc.discountedPrice || 0,
+    discountRate: doc.discountRate || 0,
+    currentCount: doc.currentQuantity || 0,
+    targetCount: doc.maxQuantity || 1,
+    timeLeft: getTimeRemaining(doc.endDate),
+    badges
   }
 }
 
-const participantsCount = computed(() => {
-  return sampleProductsList.value.reduce((sum, product) => sum + product.currentCount, 0)
-})
-
-const totalSavings = computed(() => {
-  return sampleProductsList.value.reduce(
-    (sum, product) => sum + (product.originalPrice - product.currentPrice) * product.currentCount,
-    0
-  )
-})
-
-const filteredProducts = computed(() => {
-  let result = [...sampleProductsList.value]
-
-  // 키워드 검색 필터링
-  if (keyword.value) {
-    const keywordLower = keyword.value.toLowerCase()
-    result = result.filter(
-      (product) =>
-        product.title.toLowerCase().includes(keywordLower) ||
-        (product.subtitle && product.subtitle.toLowerCase().includes(keywordLower))
-    )
-  }
-
-  // 카테고리 필터링
-  if (selectedCategory.value && selectedCategory.value !== 1) {
-    const category = categories.find((item) => item.id === selectedCategory.value)?.name
-    result = result.filter((product) => product.category === category)
-  }
-
-  // section에 따른 정렬은 loadProducts에서 이미 처리됨
-  return result
-})
-
+/* ======================
+ * ES 검색
+ * ====================== */
 const loadProducts = async () => {
   loading.value = true
   try {
-    // section에 따라 sort 파라미터 결정
-    let sortParam = null
+    const res = await groupPurchaseApi.searchGroupPurchases({
+      keyword: keyword.value,
+      status: selectedStatus.value,
+      category: selectedCategory.value,
+      size: 100
+    })
 
-    if (selectedSection.value === 'popular') {
-      sortParam = 'currentQuantity,desc'
-    } else if (selectedSection.value === 'new') {
-      sortParam = 'createdAt,desc'
-    } else if (selectedSection.value === 'ending') {
-      sortParam = 'endDate,asc'
-    } else if (selectedSection.value === 'discount') {
-      // 할인율은 프론트에서 계산 후 정렬
-      sortParam = null
-    } else if (selectedSection.value === 'priceLow') {
-      sortParam = 'discountedPrice,asc'
-    } else if (selectedSection.value === 'priceHigh') {
-      sortParam = 'discountedPrice,desc'
-    }
-
-    const response = await groupPurchaseApi.getAllGroupPurchases(0, 100, sortParam)
-    console.log('전체 공동구매 목록:', response.data)
-
-    const data = response.data.data || response.data
-    const content = data.content || data
-
-    if (Array.isArray(content)) {
-      sampleProductsList.value = content.map(transformGroupPurchase)
-
-      // 할인율 정렬이 필요한 경우 프론트에서 정렬
-      if (selectedSection.value === 'discount') {
-        sampleProductsList.value.sort((a, b) => b.discountRate - a.discountRate)
-      }
-    } else {
-      sampleProductsList.value = []
-    }
-  } catch (error) {
-    console.error('공동구매 목록 조회 실패:', error)
+    const content = res.data?.data?.content ?? []
+    sampleProductsList.value = content.map(transformGroupPurchase)
+  } catch (e) {
+    console.error('공동구매 검색 실패', e)
     sampleProductsList.value = []
   } finally {
     loading.value = false
   }
 }
 
-const setSection = (section) => {
-  selectedSection.value = section
-  router.replace({ query: { ...route.query, section } })
+/* ======================
+ * 이벤트
+ * ====================== */
+const setStatus = (status) => {
+  selectedStatus.value = status
   loadProducts()
 }
 
-const search = () => {
-  // 메서드 존재로 입력값과 동기화만 수행
+const search = () => loadProducts()
+
+const goToDetail = (id) => {
+  router.push({ name: 'group-purchase-detail', params: { id } })
 }
 
-const resetFilters = () => {
-  keyword.value = ''
-  selectedCategory.value = null
-  selectedSection.value = 'popular'
-}
-
-const toggleWishlist = (productId) => {
-  if (wishlist.value.has(productId)) {
-    wishlist.value.delete(productId)
-  } else {
-    wishlist.value.add(productId)
-  }
-  wishlist.value = new Set(wishlist.value)
-}
-
-const goToDetail = (productId) => {
-  router.push({ name: 'group-purchase-detail', params: { id: productId } })
-}
-
-const addToCart = (product) => {
-  const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-  cart.push({ productId: product.id, quantity: 1 })
-  localStorage.setItem('cart', JSON.stringify(cart))
-  router.push({ name: 'cart' })
-}
-
-onMounted(() => {
-  loadProducts()
-})
-
-watch(() => route.query.section, (section) => {
-  if (section && sections.some((item) => item.id === section)) {
-    selectedSection.value = section
-  }
-}, { immediate: true })
+/* ======================
+ * 라이프사이클
+ * ====================== */
+onMounted(loadProducts)
+watch(selectedCategory, loadProducts)
 </script>
+
+
 
 <style scoped>
 .products-page {
