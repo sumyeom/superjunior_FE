@@ -164,10 +164,8 @@ export const notificationApi = {
     },
     // 알림 읽음 처리
     markAsRead: (notificationId) => api.patch(`/notifications/${notificationId}/read`),
-    // 알림 삭제
-    deleteNotification: (notificationId) => api.delete(`/notifications/${notificationId}`),
-    // 전체 알림 삭제
-    deleteAllNotifications: () => api.delete("/notifications"),
+    // 알림 전체 읽음 처리
+    markAllAsRead: () => api.patch("/notifications/read"),
 };
 
 export default api;

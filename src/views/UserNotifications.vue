@@ -3,7 +3,7 @@
     <div class="container">
       <div class="page-header">
         <h1>알림</h1>
-        <button v-if="notifications.length > 0" class="btn-clear" @click="clearAll">전체 삭제</button>
+        <button v-if="notifications.length > 0" class="btn-action" @click="markAllAsRead">모두 읽음</button>
       </div>
 
       <!-- 탭 필터 -->
@@ -53,7 +53,6 @@
             <div class="notification-message">{{ notification.message }}</div>
             <div class="notification-time">{{ notification.time }}</div>
           </div>
-          <button class="btn-delete" @click.stop="deleteNotification(notification.id)">×</button>
         </div>
 
         <!-- 페이지네이션 -->
@@ -172,25 +171,16 @@ const markAsRead = async (id) => {
   }
 }
 
-const deleteNotification = async (id) => {
+const markAllAsRead = async () => {
   try {
-    await notificationApi.deleteNotification(id)
-    notifications.value = notifications.value.filter(n => n.id !== id)
+    await notificationApi.markAllAsRead()
+    // 모든 알림을 읽음 처리
+    notifications.value.forEach(notification => {
+      notification.read = true
+    })
   } catch (error) {
-    console.error('알림 삭제 실패:', error)
-    alert('알림 삭제에 실패했습니다.')
-  }
-}
-
-const clearAll = async () => {
-  if (confirm('모든 알림을 삭제하시겠습니까?')) {
-    try {
-      await notificationApi.deleteAllNotifications()
-      notifications.value = []
-    } catch (error) {
-      console.error('전체 알림 삭제 실패:', error)
-      alert('알림 삭제에 실패했습니다.')
-    }
+    console.error('알림 전체 읽음 처리 실패:', error)
+    alert('알림 읽음 처리에 실패했습니다.')
   }
 }
 
@@ -226,7 +216,7 @@ onMounted(() => {
   color: #ffffff;
 }
 
-.btn-clear {
+.btn-action {
   padding: 8px 16px;
   background: transparent;
   border: 1px solid #2a2a2a;
@@ -238,7 +228,7 @@ onMounted(() => {
   transition: all 0.2s;
 }
 
-.btn-clear:hover {
+.btn-action:hover {
   border-color: #3a3a3a;
   color: #ffffff;
 }
@@ -398,27 +388,6 @@ onMounted(() => {
 .notification-item.unread .notification-title {
   color: #ffffff;
   font-weight: 700;
-}
-
-.btn-delete {
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: transparent;
-  color: #666;
-  font-size: 24px;
-  cursor: pointer;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
-
-.btn-delete:hover {
-  background: #2a2a2a;
-  color: #ffffff;
 }
 
 .pagination {
