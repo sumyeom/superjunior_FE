@@ -75,7 +75,7 @@ onMounted(async () => {
     console.log('결제 승인 성공:', response.data)
 
     // 응답 데이터에서 총 포인트 설정
-    totalPoints.value = response.data.data?.totalPoints || (50000 + chargeAmount.value)
+    totalPoints.value = response.data.data?.totalPoints || (chargeAmount.value)
     loading.value = false
 
   } catch (error) {
