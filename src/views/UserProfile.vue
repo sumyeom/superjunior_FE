@@ -53,7 +53,7 @@
               <div class="info-row">
                 <span class="info-label">포인트 잔액</span>
                 <div class="point-info">
-                  <span class="info-value point-value">{{ (userInfo.point || 0).toLocaleString() }}P</span>
+                  <span class="info-value point-value">{{ formatPrice(userInfo.point) }}P</span>
                   <router-link to="/point/charge" class="btn-point-charge">포인트 충전</router-link>
                 </div>
               </div>
@@ -110,17 +110,17 @@
                     <p class="product-option">{{ product.option }}</p>
                     <div class="product-meta">
                       <span>수량: {{ product.quantity }}개</span>
-                      <span class="product-price">₩{{ product.price.toLocaleString() }}</span>
+                      <span class="product-price">₩{{ formatPrice(product.price) }}</span>
                     </div>
                   </div>
                 </div>
               </div>
               <div v-else class="order-summary">
                 <p class="order-quantity">수량: {{ order.quantity }}개</p>
-                <p class="order-price">단가: ₩{{ order.price?.toLocaleString() || '-' }}</p>
+                <p class="order-price">단가: ₩{{ formatPrice(order.price) }}</p>
               </div>
               <div class="order-footer">
-                <span class="order-total">총 결제금액: ₩{{ order.totalAmount.toLocaleString() }}</span>
+                <span class="order-total">총 결제금액: ₩{{ formatPrice(order.totalAmount) }}</span>
                 <div class="order-actions">
                   <button class="btn btn-outline btn-sm" @click="viewOrderDetail(order.orderId)">상세보기</button>
                   <button v-if="order.status === 'COMPLETED' || order.status === 'completed'" class="btn btn-outline btn-sm" @click="requestRefund(order.orderId)">환불신청</button>
@@ -212,7 +212,7 @@
       <div class="address-edit-modal">
         <div class="modal-header">
           <h2>{{ editingAddress ? '주소 수정' : '주소 추가' }}</h2>
-          <button class="close-btn" @click="closeEditAddressModal">✕</button>
+          <button class="close-btn" @click.stop="closeEditAddressModal">✕</button>
         </div>
         <form @submit.prevent="saveAddress" class="address-form">
           <div class="form-group">
@@ -239,6 +239,125 @@
         </form>
       </div>
     </div>
+    <!-- 주문 상세 모달 -->
+    <div
+      v-if="showOrderDetailModal"
+      class="modal-overlay"
+      @click.self="closeOrderDetailModal"
+    >
+      <div class="order-detail-modal">
+        <div class="modal-header">
+          <h2>주문 상세</h2>
+          <button class="close-btn" @click.stop="closeOrderDetailModal">✕</button>
+        </div>
+
+        <div v-if="selectedOrder" class="order-detail-body">
+
+          <!-- 주문 정보 -->
+          <div class="order-detail-grid">
+
+            <!-- LEFT -->
+            <div class="order-detail-col">
+              <!-- 주문 정보 -->
+              <section class="order-detail-section">
+                <h4 class="section-title">주문 정보</h4>
+                <div class="info-list">
+                  <div class="info-item">
+                    <span class="label">주문번호</span>
+                    <span class="value">{{ selectedOrder.orderId }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="label">주문일자</span>
+                    <span class="value">{{ formatDate(selectedOrder.createdAt) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="label">주문 상태</span>
+                    <span class="value status">
+                      {{ getStatusText(selectedOrder.status) }}
+                    </span>
+                  </div>
+                </div>
+              </section>
+
+              <!-- 공동구매 정보 -->
+              <section class="order-detail-section">
+                <h4 class="section-title">공동구매 정보</h4>
+                <div class="info-list">
+                  <div class="info-item">
+                    <span class="label">제목</span>
+                    <span class="value">{{ selectGroupPurchase?.title || '-' }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="label">카테고리</span>
+                    <span class="value badge">
+                      {{ selectGroupPurchase?.category || '-' }}
+                    </span>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <!-- RIGHT -->
+            <div class="order-detail-col">
+              <!-- 상품 정보 -->
+              <section class="order-detail-section">
+                <h4 class="section-title">상품 정보</h4>
+                <div class="info-list">
+                  <div class="info-item">
+                    <span class="label">상품명</span>
+                    <span class="value">{{ selectProduct?.name || '-' }}</span>
+                  </div>
+                </div>
+              </section>
+
+              <!-- 배송 정보 -->
+              <section class="order-detail-section">
+                <h4 class="section-title">배송 정보</h4>
+                <div class="info-list">
+                  <div class="info-item">
+                    <span class="label">받는 분</span>
+                    <span class="value">{{ selectedOrder.receiverName }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="label">우편번호</span>
+                    <span class="value">{{ selectedOrder.postalCode }}</span>
+                  </div>
+                  <div class="info-item column">
+                    <span class="label">주소</span>
+                    <span class="value">
+                      {{ selectedOrder.address }} {{ selectedOrder.addressDetail }}
+                    </span>
+                  </div>
+                </div>
+              </section>
+
+              <!-- 결제 정보 -->
+              <section class="order-detail-section">
+                <h4 class="section-title">결제 정보</h4>
+                <div class="info-list">
+                  <div class="info-item">
+                    <span class="label">수량</span>
+                    <span class="value">{{ selectedOrder.quantity }}개</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="label">단가</span>
+                    <span class="value">₩{{ formatPrice(selectedOrder.price) }}</span>
+                  </div>
+                  <div class="info-item total">
+                    <span class="label">총 결제금액</span>
+                    <span class="value highlight">
+                      ₩{{ formatPrice(selectedOrder.quantity * selectedOrder.price) }}
+                    </span>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+    </div>
   </main>
 </template>
 
@@ -247,6 +366,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { authAPI } from '@/api/auth'
 import AddressSearch from '@/components/AddressSearch.vue'
+import { groupPurchaseApi, productApi } from '@/api/axios'
 
 const router = useRouter()
 
@@ -258,6 +378,12 @@ const userInfo = ref({
   imageUrl: '',
   point: 0
 })
+
+const formatPrice = (value) => {
+  const numberValue = Number(value)
+  if (isNaN(numberValue)) return '-'
+  return numberValue.toLocaleString()
+}
 
 const showAddressModal = ref(false)
 const showEditAddressModal = ref(false)
@@ -271,6 +397,53 @@ const addressPageInfo = ref({
   totalElements: 0,
   size: 10
 })
+
+// 주문 상세
+const showOrderDetailModal = ref(false)
+const selectedOrder = ref(null)
+const selectGroupPurchase = ref(null)
+const selectProduct = ref(null)
+
+const viewOrderDetail = async (orderId) => {
+  try {
+    // 1️⃣ 주문 상세
+    const orderResponse = await authAPI.getOrderDetail(orderId)
+    const order = orderResponse?.data ?? orderResponse
+
+    if (!order) {
+      alert('주문 상세 정보를 불러올 수 없습니다.')
+      return
+    }
+
+    // 2️⃣ 공동구매
+    let groupPurchase = null
+    if (order.groupPurchaseId) {
+      const gpResponse =
+        await groupPurchaseApi.getGroupPurchaseById(order.groupPurchaseId)
+
+      // ⭐⭐⭐ 여기 중요
+      groupPurchase = gpResponse?.data?.data ?? gpResponse?.data ?? null
+    }
+
+    // 3 상품
+    let product = null
+        if (groupPurchase.productId) {
+          const pResponse =
+            await productApi.getProductById(groupPurchase.productId)
+
+          // ⭐⭐⭐ 여기 중요
+          product = pResponse?.data?.data ?? pResponse?.data ?? null
+        }
+
+    selectedOrder.value = order
+    selectGroupPurchase.value = groupPurchase
+    selectProduct.value = product
+    showOrderDetailModal.value = true
+  } catch (e) {
+    console.error('주문 상세 조회 실패', e)
+    alert('주문 상세 조회에 실패했습니다.')
+  }
+}
 
 const addressForm = ref({
   receiverName: '',
@@ -552,11 +725,6 @@ const getStatusText = (status) => {
   return statusMap[status] || status
 }
 
-const viewOrderDetail = (orderId) => {
-  alert(`주문 상세 정보를 확인합니다. (주문 ID: ${orderId})`)
-  // TODO: 주문 상세 페이지로 이동
-}
-
 // const requestRefund = (orderId) => {
 //   if (confirm('환불을 신청하시겠습니까?')) {
 //     alert('환불 신청이 접수되었습니다.')
@@ -665,6 +833,11 @@ const loadOrders = async () => {
     loadingOrders.value = false
   }
 }
+
+const closeOrderDetailModal = () => {
+  showOrderDetailModal.value = false
+}
+
 </script>
 
 <style scoped>
@@ -1024,6 +1197,31 @@ textarea:focus {
   object-fit: cover;
   border: 2px solid #2a2a2a;
 }
+
+
+.order-detail-modal {
+  position: relative;
+  z-index: 1001;
+}
+.close-btn {
+  position: relative;
+  z-index: 1002;
+  pointer-events: auto;
+}
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+
+  background: rgba(0, 0, 0, 0.8);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 9999;           /* ⭐ 핵심 */
+  pointer-events: all;    /* ⭐ 핵심 */
+}
+
 
 .no-image {
   color: #999;
@@ -1609,6 +1807,96 @@ textarea:focus {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* 주문상세 */
+.order-detail-section {
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.order-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.order-detail-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  color: #ffffff;
+  border-left: 4px solid #ffffff;
+  padding-left: 10px;
+}
+
+.info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.info-item.column {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.label {
+  font-size: 13px;
+  color: #999;
+  min-width: 90px;
+}
+
+.value {
+  font-size: 14px;
+  color: #ffffff;
+  font-weight: 500;
+  text-align: right;
+  word-break: break-all;
+}
+
+.value.status {
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(116, 192, 252, 0.15);
+  color: #74c0fc;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.value.badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: #2a2a2a;
+  font-size: 12px;
+}
+
+.info-item.total {
+  border-top: 1px dashed #2a2a2a;
+  padding-top: 12px;
+  margin-top: 8px;
+}
+
+.value.highlight {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
 
 @media (max-width: 640px) {
   .address-modal,

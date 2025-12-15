@@ -80,6 +80,10 @@ export const authAPI = {
         const response = await api.get(`/orders/consumer`)
         return response.data;
     },
+    getOrderDetail: async(orderId) =>{
+        const response = await api.get(`/orders/${orderId}`)
+        return response.data;
+    },
     // 판매자 정보 조회
     getSellerInfo: async(sellerId) => {
         const response = await api.get(`/members/seller/${sellerId}`)
