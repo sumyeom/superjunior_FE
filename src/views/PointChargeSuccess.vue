@@ -9,11 +9,11 @@
         <div class="info-box">
           <div class="info-row">
             <span class="label">충전 금액</span>
-            <span class="value">{{ chargeAmount.toLocaleString() }}원</span>
+            <span class="value">{{ Number(chargeAmount).toLocaleString() }}원</span>
           </div>
           <div class="info-row">
             <span class="label">충전 후 포인트</span>
-            <span class="value highlight">{{ totalPoints.toLocaleString() }}P</span>
+            <span class="value highlight">{{ Number(totalPoints).toLocaleString() }}P</span>
           </div>
           <div class="info-row">
             <span class="label">주문번호</span>
