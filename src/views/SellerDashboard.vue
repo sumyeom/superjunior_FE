@@ -9,14 +9,6 @@
               <div>
                 <p class="eyebrow">판매자 센터</p>
               </div>
-              <div class="action-buttons">
-                <router-link to="/seller/register/product-register" class="btn btn-primary">
-                  상품 추가
-                </router-link>
-                <router-link to="/group-purchases/create" class="btn btn-outline">
-                  공동 구매 추가
-                </router-link>
-              </div>
             </div>
             <!-- <h1>{{ seller.name }}</h1> -->
             <!-- <p class="description">{{ seller.description }}</p> -->

@@ -66,23 +66,23 @@
             </div>
           </div>
           
-          <div class="panel">
+          <!-- <div class="panel">
             <h3>활동 통계</h3>
             <div class="user-stats">
               <div class="stat-box">
                 <span class="stat-label">구매한 상품</span>
                 <span class="stat-number">{{ userStats.purchasedProducts }}</span>
               </div>
-              <!-- <div class="stat-box">
+               <div class="stat-box">
                 <span class="stat-label">작성한 리뷰</span>
                 <span class="stat-number">{{ userStats.reviews }}</span>
-              </div> -->
+              </div> -
               <div class="stat-box">
                 <span class="stat-label">참여한 공동구매</span>
                 <span class="stat-number">{{ userStats.groupPurchases }}</span>
               </div>
             </div>
-          </div>
+          </div> -->
         </div>
         
         <div class="panel">
@@ -477,11 +477,11 @@ const addressFormData = ref({
   addressDetail: ''
 })
 
-const userStats = ref({
-  purchasedProducts: 23,
-  reviews: 15,
-  groupPurchases: 18
-})
+// const userStats = ref({
+//   purchasedProducts: 23,
+//   reviews: 15,
+//   groupPurchases: 18
+// })
 
 const orderHistory = ref([])
 const loadingOrders = ref(false)
@@ -1019,7 +1019,6 @@ textarea:focus {
 .btn-primary {
   background: #ffffff;
   color: #0a0a0a;
-  margin-top: 16px;
 }
 
 .btn-primary:hover {
@@ -1788,7 +1787,9 @@ textarea:focus {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
-  margin-top: 8px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #2a2a2a;
 }
 
 .form-actions .btn {
