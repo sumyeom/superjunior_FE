@@ -76,9 +76,20 @@ export const authAPI = {
         return response.data;
     },
     // 주문 내역 조회
-    getOrders: async() => {
-        const response = await api.get(`/orders/consumer`)
-        return response.data;
+    getOrders: async ({
+      page = 0,
+      size = 5,
+      sort = 'createdAt,desc'
+    } = {}) => {
+      const response = await api.get('/orders/consumer', {
+        params: {
+          page,
+          size,
+          sort
+        }
+      })
+
+      return response.data.data
     },
     getOrderDetail: async(orderId) =>{
         const response = await api.get(`/orders/${orderId}`)

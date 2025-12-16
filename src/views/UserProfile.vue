@@ -129,6 +129,29 @@
             </div>
           </div>
         </div>
+        <!-- 주문 페이징 -->
+        <div v-if="orderPageInfo.totalPages > 1" class="pagination">
+          <button
+            class="page-btn"
+            :disabled="orderPageInfo.currentPage === 0"
+            @click="loadOrders(orderPageInfo.currentPage - 1)"
+          >
+            이전
+          </button>
+
+          <span class="page-info">
+            {{ orderPageInfo.currentPage + 1 }} / {{ orderPageInfo.totalPages }}
+          </span>
+
+          <button
+            class="page-btn"
+            :disabled="orderPageInfo.currentPage >= orderPageInfo.totalPages - 1"
+            @click="loadOrders(orderPageInfo.currentPage + 1)"
+          >
+            다음
+          </button>
+        </div>
+
         
       </div>
     </div>
@@ -836,31 +859,35 @@ onMounted(async () => {
   }
 
   // 주문 내역 가져오기
-  await loadOrders()
+  await loadOrders(0)
+})
+
+const orderPageInfo = ref({
+  currentPage: 0,
+  totalPages: 0,
+  totalElements: 0,
+  size: 5
 })
 
 // 주문 내역 불러오기
-const loadOrders = async () => {
+const loadOrders = async (page = 0) => {
   loadingOrders.value = true
   try {
-    const response = await authAPI.getOrders()
-    console.log('주문 내역:', response)
+    const pageData = await authAPI.getOrders({
+      page,
+      size: orderPageInfo.value.size
+    })
 
-    // 응답 데이터 구조에 따라 처리
-    const ordersData = response.data || response
-
-    if (Array.isArray(ordersData)) {
-      orderHistory.value = ordersData
-    } else if (ordersData && Array.isArray(ordersData.content)) {
-      // Pageable 객체인 경우
-      orderHistory.value = ordersData.content
-    } else {
-      orderHistory.value = []
+    orderHistory.value = pageData.content
+    orderPageInfo.value = {
+      currentPage: pageData.number,
+      totalPages: pageData.totalPages,
+      totalElements: pageData.totalElements,
+      size: pageData.size
     }
-  } catch (error) {
-    console.error('주문 내역 조회 실패:', error)
+  } catch (e) {
+    console.error('주문 내역 조회 실패', e)
     orderHistory.value = []
-    // 에러가 발생해도 사용자에게는 조용히 처리 (빈 목록 표시)
   } finally {
     loadingOrders.value = false
   }
