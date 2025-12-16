@@ -40,6 +40,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { authAPI } from '@/api/auth'
 
 const router = useRouter()
 const route = useRoute()
@@ -47,23 +48,37 @@ const route = useRoute()
 const loading = ref(true)
 const chargeAmount = ref(0)
 const totalPoints = ref(0)
-const orderId = ref('')
+const chargeInfo = ref(null)
+const orderId = ref(null)
+
+const paymentId = route.query.paymentId
 
 onMounted(async () => {
+  if (!paymentId || typeof paymentId !== 'string') {
+    router.replace('/point/charge')
+    return
+  }
+
   try {
-    // URL 쿼리 파라미터에서 결제 정보 추출
-    const orderIdParam = route.query.orderId
-    const amount = route.query.amount
+    const chargeRes = await authAPI.getChargeHistory(paymentId)
+    const data = chargeRes.data.data
 
-    orderId.value = orderIdParam || ''
-    chargeAmount.value = parseInt(amount) || 0
+    chargeInfo.value = data
+    chargeAmount.value = data.amount      // 필드명 확인 OK
+    orderId.value = data.orderId
 
-    loading.value = false
-
+    const pointRes = await authAPI.getPoints()
+    totalPoints.value = pointRes.data.getPointBalance
   } catch (error) {
     console.error('결제 승인 실패:', error)
-    alert(`결제 승인 중 오류가 발생했습니다: ${error.response?.data?.message || error.message}`)
+    alert(
+      `결제 승인 중 오류가 발생했습니다: ${
+        error.response?.data?.message || error.message
+      }`
+    )
     router.push('/point/charge')
+  } finally {
+    loading.value = false
   }
 })
 

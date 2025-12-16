@@ -121,6 +121,10 @@ export const authAPI = {
         const response = await api.get(`/points`)
         return response.data;
     },
+    // 포인트 충전 내역 조회
+    getChargeHistory(paymentId) {
+        return api.get(`/payment-points/${paymentId}`)
+      }
 
     searchProducts: async ({
         keyword = '',
