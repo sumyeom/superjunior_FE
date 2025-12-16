@@ -124,21 +124,14 @@ const loadProducts = async () => {
     }
 
     sellerProducts.value = productsList.map(purchase => {
-      console.log('원본 purchase 객체:', purchase)
-      console.log('purchase의 모든 키:', Object.keys(purchase))
-
       const categoryKorean = categoryMap[purchase.category] || purchase.category || '기타'
       let purchaseImage = purchase.imageUrl || purchase.image
       if (!purchaseImage || purchaseImage.trim() === '') {
         purchaseImage = categoryImages[purchase.category] || categoryImages['PET']
       }
 
-      // 여러 가능한 ID 필드명 시도
-      const purchaseId = purchase.purchaseId || purchase.id || purchase._id || purchase.groupPurchaseId
-      console.log('추출한 ID:', purchaseId)
-
-      const mappedProduct = {
-        id: purchaseId,
+      return {
+        id: purchase.purchaseId || purchase.id || purchase._id || purchase.groupPurchaseId,
         title: purchase.title || purchase.name,
         category: categoryKorean,
         price: purchase.targetPrice || purchase.price,
@@ -146,10 +139,7 @@ const loadProducts = async () => {
         image: purchaseImage,
         status: purchase.status
       }
-      console.log('매핑된 공동구매:', mappedProduct)
-      return mappedProduct
     })
-    console.log('전체 sellerProducts:', sellerProducts.value)
   } catch (error) {
     console.error('판매자 공동구매 목록 조회 실패:', error)
     sellerProducts.value = []
@@ -157,11 +147,7 @@ const loadProducts = async () => {
 }
 
 const goToProduct = (id) => {
-  console.log('공동구매 클릭 - ID:', id)
-  if (!id) {
-    console.error('ID가 없습니다!')
-    return
-  }
+  if (!id) return
   router.push({ name: 'group-purchase-detail', params: { id } })
 }
 
