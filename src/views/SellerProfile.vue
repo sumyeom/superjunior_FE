@@ -130,7 +130,7 @@ const loadProducts = async () => {
         purchaseImage = categoryImages[purchase.category] || categoryImages['PET']
       }
 
-      return {
+      const mappedProduct = {
         id: purchase.purchaseId || purchase.id,
         title: purchase.title || purchase.name,
         category: categoryKorean,
@@ -139,7 +139,10 @@ const loadProducts = async () => {
         image: purchaseImage,
         status: purchase.status
       }
+      console.log('매핑된 공동구매:', mappedProduct)
+      return mappedProduct
     })
+    console.log('전체 sellerProducts:', sellerProducts.value)
   } catch (error) {
     console.error('판매자 공동구매 목록 조회 실패:', error)
     sellerProducts.value = []
@@ -147,6 +150,11 @@ const loadProducts = async () => {
 }
 
 const goToProduct = (id) => {
+  console.log('공동구매 클릭 - ID:', id)
+  if (!id) {
+    console.error('ID가 없습니다!')
+    return
+  }
   router.push({ name: 'group-purchase-detail', params: { id } })
 }
 
