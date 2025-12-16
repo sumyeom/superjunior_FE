@@ -104,10 +104,15 @@ const categoryImages = {
 const loadProducts = async () => {
   console.log('SellerProfile - 받은 판매자 ID:', props.id)
   try {
-    const response = await api.get(`/products`, {
-      params: { sellerId: props.id }
+    // 검색 API를 사용해서 특정 판매자의 상품 조회 시도
+    const response = await api.get(`/searches/product/search`, {
+      params: {
+        sellerId: props.id,
+        page: 0,
+        size: 100
+      }
     })
-    console.log('API 전체 응답:', response.data)
+    console.log('검색 API 전체 응답:', response.data)
     const productsData = response.data.data ?? response.data
     console.log('productsData:', productsData)
     const productsList = Array.isArray(productsData) ? productsData : productsData.content ?? []
@@ -115,8 +120,11 @@ const loadProducts = async () => {
     console.log('첫 번째 상품:', productsList[0])
 
     // 첫 번째 상품에서 판매자 이름 가져오기
-    if (productsList.length > 0 && productsList[0].sellerName) {
-      seller.value = { name: productsList[0].sellerName }
+    if (productsList.length > 0) {
+      seller.value = {
+        name: productsList[0].sellerName || productsList[0].seller?.name || '판매자'
+      }
+      console.log('판매자 이름:', seller.value.name)
     }
 
     sellerProducts.value = productsList.map(product => {
@@ -138,6 +146,7 @@ const loadProducts = async () => {
     })
   } catch (error) {
     console.error('판매자 상품 목록 조회 실패:', error)
+    console.error('에러 상세:', error.response?.data)
     sellerProducts.value = []
   }
 }
