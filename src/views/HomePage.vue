@@ -257,7 +257,7 @@
       <div class="container">
         <div class="section-header">
           <h2 class="section-title">맞춤형 추천</h2>
-          <router-link :to="{ name: 'products', query: { section: 'recommend' } }" class="view-all">전체보기</router-link>
+          <router-link :to="{ name: 'products', query: { section: 'recommend' } }" class="view-all">전체보기 →</router-link>
         </div>
         <div class="products-grid">
           <div
