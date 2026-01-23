@@ -1126,7 +1126,7 @@ const transformProduct = (product) => {
 // 공동구매 데이터 변환 (GroupPurchaseDocument 기준)
 const transformGroupPurchase = (gp) => {
   // embedded product
-  const product = gp.productDocumentEmbedded || {}
+  const product = gp.productSearchInfo || {}
 
   // 카테고리 변환 (ProductDocumentEmbedded.category)
   const categoryKorean =
