@@ -189,23 +189,23 @@
       </div>
     </section>
 
-    <!-- 최신 공동구매 -->
+    <!-- 최대 할인 공동구매 -->
     <section class="section">
       <div class="container">
         <div class="section-header">
-          <h2 class="section-title">✨ 최신 공동구매</h2>
-          <router-link :to="{ name: 'products', query: { section: 'new' } }" class="view-all">전체보기 →</router-link>
+          <h2 class="section-title">✨ 최대 할인</h2>
+          <router-link :to="{ name: 'products', query: { section: 'discount' } }" class="view-all">전체보기 →</router-link>
         </div>
         <div class="products-grid">
           <div
-            v-for="product in newProducts"
+            v-for="product in discountProducts"
             :key="product.id"
             class="product-card"
             @click="goToProduct(product.id)"
           >
             <div class="product-image-wrapper">
               <div class="product-image" :style="{ backgroundImage: `url(${product.image})` }"></div>
-              <div class="badge new">신규</div>
+              <div class="badge discount">할인</div>
             </div>
             <div class="product-info">
               <div class="product-category">{{ product.category }}</div>
@@ -243,6 +243,69 @@
                     @click.stop="goToProduct(product.id)"
                   >
                     참여하기
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 맞춤형 추천 -->
+    <section class="section">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">맞춤형 추천</h2>
+          <router-link :to="{ name: 'products', query: { section: 'recommend' } }" class="view-all">전체보기 →</router-link>
+        </div>
+        <div class="products-grid">
+          <div
+            v-for="product in recommendedProducts"
+            :key="product.id"
+            class="product-card"
+            @click="goToProduct(product.id)"
+          >
+            <div class="product-image-wrapper">
+              <div class="product-image" :style="{ backgroundImage: `url(${product.image})` }"></div>
+              <div class="badge recommend">추천</div>
+            </div>
+            <div class="product-info">
+              <div class="product-category">{{ product.category }}</div>
+              <h3 class="product-title">{{ product.title }}</h3>
+              <div class="product-price-info">
+                <div class="price-row">
+                  <span class="original-price">₩{{ product.originalPrice.toLocaleString() }}</span>
+                  <span class="discount-rate">{{ product.discountRate }}% 할인</span>
+                </div>
+                <div class="current-price">₩{{ product.currentPrice.toLocaleString() }}</div>
+              </div>
+              <div class="product-progress">
+                <div class="progress-info">
+                  <span class="progress-text">{{ product.currentCount }}명 참여</span>
+                  <span class="progress-target">목표: {{ product.targetCount }}명</span>
+                </div>
+                <div class="progress-bar">
+                  <div
+                    class="progress-fill"
+                    :style="{ width: `${(product.currentCount / product.targetCount) * 100}%` }"
+                  ></div>
+                </div>
+              </div>
+              <div class="product-footer">
+                <span class="time-left">⏰ {{ product.timeLeft }}</span>
+                <div class="footer-actions">
+                  <button
+                    class="btn btn-outline btn-sm"
+                    @click.stop="addToCart(product)"
+                  >
+                    장바구니
+                  </button>
+                  <button
+                    class="btn btn-primary btn-sm"
+                    @click.stop="goToProduct(product.id)"
+                  >
+                    참여햐기
                   </button>
                 </div>
               </div>
@@ -467,13 +530,27 @@ const fetchEndingProducts = async () => {
   return res.data.data.content
 }
 
-//최신 공동구매
-const newProducts = ref([])
+//최대 할인 공동구매
+const discountProducts = ref([])
 
-const fetchNewProducts = async () => {
+const fetchDiscountProducts = async () => {
   const res = await groupPurchaseApi.searchGroupPurchases({
     status: 'OPEN',
-    sort: 'updatedAt,desc',
+    sort: 'discountRate,desc',
+    size: 3
+  })
+
+  return res.data.data.content
+}
+
+//맞춤형 추천
+// todo api 수정 필요
+const recommendedProducts = ref([])
+
+const fetchRecommendedProducts = async () => {
+  const res = await groupPurchaseApi.searchGroupPurchases({
+    status: 'OPEN',
+    sort: 'currentQuantity,desc',
     size: 3
   })
 
@@ -530,20 +607,23 @@ onMounted(async () => {
 
   // 공동구매 데이터 로드
   try {
-    const [popularDocs, endingDocs, newDocs] = await Promise.all([
+    const [popularDocs, endingDocs, discountDocs, recommendDocs] = await Promise.all([
       fetchPopularProducts(),
       fetchEndingProducts(),
-      fetchNewProducts()
+      fetchDiscountProducts(),
+      fetchRecommendedProducts()
     ])
 
     popularProducts.value = popularDocs.map(mapToProductCard)
     endingProducts.value = endingDocs.map(mapToProductCard)
-    newProducts.value = newDocs.map(mapToProductCard)
+    discountProducts.value = discountDocs.map(mapToProductCard)
+    recommendedProducts.value = recommendDocs.map(mapToProductCard)
   } catch (e) {
     console.error('메인 페이지 상품 조회 실패', e)
     popularProducts.value = []
     endingProducts.value = []
-    newProducts.value = []
+    discountProducts.value = []
+    recommendedProducts.value = []
   }
 })
 
@@ -829,8 +909,12 @@ onBeforeUnmount(() => {
   background: #ff6348;
 }
 
-.badge.new {
+.badge.discount {
   background: #2ed573;
+}
+
+.badge.recommend {
+  background: #ffa502;
 }
 
 .product-info {

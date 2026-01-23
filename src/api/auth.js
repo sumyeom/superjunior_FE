@@ -152,9 +152,9 @@ export const authAPI = {
         status = '',
         page = 0,
         size = 6,
-        sort = 'createdAt,desc'
+        sort = ''
       } = {}) => {
-        const response = await api.get('/searches/purchase/search', {
+        const response = await api.get('/searches/purchase/mine', {
           params: {
             keyword,
             category,
