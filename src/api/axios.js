@@ -22,6 +22,33 @@ export const api = axios.create({
   },
 });
 
+// 요청 인터셉터: 로그인 필요 API에 X-Member-Id 헤더 자동 첨부
+api.interceptors.request.use(
+  (config) => {
+    let memberId = localStorage.getItem("member_id");
+    if (!memberId) {
+      try {
+        const userDataRaw = localStorage.getItem("user_data");
+        const userData = userDataRaw ? JSON.parse(userDataRaw) : null;
+        if (userData?.memberId) {
+          memberId = userData.memberId;
+          localStorage.setItem("member_id", memberId);
+        }
+      } catch (e) {
+        console.warn("[Auth] user_data 파싱 실패:", e);
+      }
+    }
+    if (memberId) {
+      config.headers = {
+        ...config.headers,
+        "X-Member-Id": memberId,
+      };
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 export const authApi = axios.create({
   baseURL: AUTH_BASE_URL,
   timeout: 30000,
@@ -117,7 +144,6 @@ api.interceptors.response.use(
     // 로그인 정보가 없으면 refresh 시도하지 않고 그대로 반환
     if (isNotLoggedIn) {
       // 로컬 스토리지 비우기 (로그인 시 저장되는 항목들만 제거)
-      localStorage.removeItem("access_token");
       localStorage.removeItem("member_id");
       localStorage.removeItem("user_email");
       localStorage.removeItem("user_role");
