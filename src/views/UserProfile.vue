@@ -725,8 +725,8 @@
                 <p>카테고리별로 검색하고 새로운 판매를 빠르게 시작하세요.</p>
               </div>
               <div class="hero-actions">
-                <button class="btn btn-outline" @click="goToSellerProducts">전체 상품 보기</button>
-                <button class="btn btn-primary" @click="goToProductRegister">+ 새 상품 등록</button>
+                <button class="btn btn-primary" @click="goToProductRegister">+ 상품 등록</button>
+                <button class="btn btn-outline" @click="goToGroupPurchaseManage">+ 내 공동구매 등록</button>
               </div>
             </div>
 
@@ -752,7 +752,7 @@
                     </p>
                   </div>
                   <button class="link-button" @click="goToSellerProducts">
-                    전체 보기 →
+                    전체 상품 보기 →
                   </button>
                 </div>
                 <div class="seller-mini-section">
@@ -761,9 +761,6 @@
                   </div>
                   <div v-else-if="sellerProductsPreview.length === 0" class="mini-empty">
                     <p>등록된 상품이 없습니다</p>
-                    <button class="btn btn-outline btn-sm" @click="goToProductRegister">
-                      상품 등록하기
-                    </button>
                   </div>
                   <div v-else class="seller-mini-list">
                     <div class="seller-mini-hero">
@@ -806,7 +803,7 @@
                     </p>
                   </div>
                   <button class="link-button" @click="goToGroupPurchaseManage">
-                    전체 보기 →
+                    공동구매 전체 보기 →
                   </button>
                 </div>
                 <div class="seller-mini-section">
