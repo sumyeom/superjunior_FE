@@ -371,6 +371,7 @@ const secondaryCategories = computed(() => allCategories.slice(4))
 const filterByCategory = (value) => {
   selectedCategory.value = value
   loadProducts()
+  fetchRecommendedProducts()
 }
 
 // 카테고리별 기본 이미지
@@ -452,7 +453,10 @@ const mapToProductCard = (gp) => {
 
 const fetchRecommendedProducts = async () => {
   try {
-    const res = await auth.searchAIRecommandPurchases()
+    const res = await auth.searchAIRecommandPurchases({
+      keyword: keyword.value,
+      category: selectedCategory.value
+    })
     const items = res?.groupPurchase ?? []
     recommendedProducts.value = items.slice(0, 3).map(mapToProductCard)
     recommendedReason.value = res?.reason ?? ''
@@ -512,7 +516,6 @@ const resetPageAndReload = () => {
 watch(sortBy, resetPageAndReload)
 watch(selectedStatus, resetPageAndReload)
 watch(selectedCategory, resetPageAndReload)
-watch(keyword, resetPageAndReload)
 
 /* ======================
  * EVENTS
@@ -522,7 +525,10 @@ const setStatus = (status) => {
   loadProducts()
 }
 
-const search = () => loadProducts()
+const search = () => {
+  loadProducts()
+  fetchRecommendedProducts()
+}
 
 const goToDetail = (id) => {
   router.push({ name: 'group-purchase-detail', params: { id } })
@@ -559,6 +565,7 @@ watch(
 
     // 🔥 실제 검색 실행
     loadProducts()
+    fetchRecommendedProducts()
   },
   { immediate: true }
 )
