@@ -160,7 +160,8 @@ api.interceptors.response.use(
 export const productApi = {
   createProduct: (data) => api.post("/products", data),
   getProductById: (productId) => api.get(`/products/${productId}`),
-  getProducts: () => api.get("/products"),
+  getProducts: (params = {}) =>
+    api.get('/products', { params: { size: 1000, ...params } }),
 
   updateProduct: (productId, data) =>
     api.patch(`/products/${productId}`, data),

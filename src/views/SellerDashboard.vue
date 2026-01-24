@@ -1023,19 +1023,17 @@ const size = ref(4)
 const totalPages = ref(0)
 const totalElements = ref(0)
 
-const normalizeProductList = (response) => {
-  const data = response?.data?.data || response?.data || response
-  if (Array.isArray(data?.content)) return data.content
-  if (Array.isArray(data)) return data
-  return []
-}
-
 //상품 검색
 const searchProducts = async () => {
   loadingProducts.value = true
   try {
-    const response = await productApi.getProducts()
-    const list = normalizeProductList(response)
+    const response = await productApi.getProducts({
+      page: 0,
+      size: 1000,
+      sort: 'createdAt,desc'
+    })
+    const pageData = response?.data?.data || response?.data || {}
+    const list = Array.isArray(pageData?.content) ? pageData.content : []
 
     const filtered = list.filter(product => {
       const matchesKeyword = searchKeyword.value

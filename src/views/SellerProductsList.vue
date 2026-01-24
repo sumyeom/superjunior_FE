@@ -62,6 +62,26 @@
           </div>
         </div>
       </div>
+
+      <div v-if="totalPages > 1" class="pagination">
+        <button
+          class="page-btn"
+          :disabled="page === 0"
+          @click="goToPage(page - 1)"
+        >
+          이전
+        </button>
+        <span class="page-info">
+          {{ page + 1 }} / {{ totalPages }}
+        </span>
+        <button
+          class="page-btn"
+          :disabled="page + 1 >= totalPages"
+          @click="goToPage(page + 1)"
+        >
+          다음
+        </button>
+      </div>
     </div>
   </main>
 </template>
@@ -74,6 +94,10 @@ import { productApi } from '@/api/axios'
 const router = useRouter()
 
 const loading = ref(false)
+const page = ref(0)
+const size = ref(9)
+const totalPages = ref(0)
+const totalElements = ref(0)
 
 // 카테고리 한글 변환
 const categoryMap = {
@@ -129,20 +153,31 @@ const transformProduct = (product) => {
   }
 }
 const sellerProducts = ref([])
-const loadingProducts = ref(false)
 const loadProducts = async () => {
-  loadingProducts.value = true
+  loading.value = true
   try {
     const response = await productApi.getProducts()
     const data = response.data?.data || response.data
     const list = Array.isArray(data?.content) ? data.content : Array.isArray(data) ? data : []
-    sellerProducts.value = list.map(transformProduct)
+    totalElements.value = list.length
+    totalPages.value = Math.ceil(list.length / size.value)
+    const start = page.value * size.value
+    const end = start + size.value
+    sellerProducts.value = list.slice(start, end).map(transformProduct)
   } catch (error) {
     console.error('상품 목록 조회 실패:', error)
     sellerProducts.value = []
+    totalElements.value = 0
+    totalPages.value = 0
   } finally {
-    loadingProducts.value = false
+    loading.value = false
   }
+}
+
+const goToPage = (nextPage) => {
+  if (nextPage < 0 || nextPage >= totalPages.value) return
+  page.value = nextPage
+  loadProducts()
 }
 
 const viewProduct = (id) => {
@@ -444,6 +479,43 @@ onMounted(() => {
   .products-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.pagination {
+  margin-top: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+
+.page-btn {
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid #2a2a2a;
+  background: #1a1a1a;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: #ffffff;
+  color: #0a0a0a;
+  border-color: #ffffff;
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-info {
+  min-width: 80px;
+  text-align: center;
+  font-weight: 600;
+  color: #ffffff;
 }
 </style>
 
