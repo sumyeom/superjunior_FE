@@ -74,11 +74,25 @@
             <div v-if="isSeller" class="nav-section">
               <h4 class="nav-section-title">판매자</h4>
               <button
-                class="nav-item"
-                @click="goToSellerPage"
+                :class="['nav-item', { active: activeMenu === 'seller-center' }]"
+                @click="openSellerMenu('seller-center')"
               >
                 <span class="nav-icon">📊</span>
-                <span>판매자 대시보드</span>
+                <span>판매자 센터</span>
+              </button>
+              <button
+                :class="['nav-item', { active: activeMenu === 'seller-sales' }]"
+                @click="openSellerMenu('seller-sales')"
+              >
+                <span class="nav-icon">🛒</span>
+                <span>판매 목록</span>
+              </button>
+              <button
+                :class="['nav-item', { active: activeMenu === 'seller-settlement' }]"
+                @click="openSellerMenu('seller-settlement')"
+              >
+                <span class="nav-icon">💳</span>
+                <span>정산 현황</span>
               </button>
             </div>
 
@@ -532,6 +546,206 @@
             </div>
           </section>
 
+          <!-- 판매자 센터 -->
+          <section
+            v-if="isSeller && activeMenu === 'seller-center'"
+            class="content-section seller-center"
+          >
+            <h2 class="section-title">판매자 센터</h2>
+
+            <div class="seller-center-grid">
+              <div class="seller-card seller-info-card">
+                <div class="card-header">
+                  <div>
+                    <p class="card-subtitle">은행</p>
+                    <h3>{{ sellerAccountInfo.bank }}</h3>
+                  </div>
+                  <button class="link-button" @click="goToSellerProfile">
+                    정보 수정
+                  </button>
+                </div>
+                <dl class="info-list">
+                  <div class="info-row">
+                    <dt>계좌번호</dt>
+                    <dd>{{ sellerAccountInfo.accountNumber }}</dd>
+                  </div>
+                  <div class="info-row">
+                    <dt>예금주</dt>
+                    <dd>{{ sellerAccountInfo.owner }}</dd>
+                  </div>
+                  <div class="info-row">
+                    <dt>사업자 등록번호</dt>
+                    <dd>{{ sellerAccountInfo.businessNumber }}</dd>
+                  </div>
+                  <div class="info-row">
+                    <dt>전화번호</dt>
+                    <dd>{{ sellerAccountInfo.phone || '-' }}</dd>
+                  </div>
+                  <div class="info-row">
+                    <dt>이메일</dt>
+                    <dd>{{ sellerAccountInfo.email }}</dd>
+                  </div>
+                </dl>
+              </div>
+
+              <div class="seller-card order-card">
+                <div class="card-header">
+                  <div>
+                    <p class="card-subtitle">주문 목록</p>
+                    <h3>실시간 주문 현황</h3>
+                  </div>
+                  <button class="link-button">
+                    새로고침
+                  </button>
+                </div>
+                <div class="empty-state-lg">
+                  <p>주문 내역이 없습니다</p>
+                </div>
+              </div>
+
+              <div class="seller-card inquiry-card">
+                <div class="card-header">
+                  <div>
+                    <p class="card-subtitle">고객 문의 현황</p>
+                    <h3>최근 문의</h3>
+                  </div>
+                </div>
+                <ul class="inquiry-list">
+                  <li v-for="inquiry in sellerInquiries" :key="inquiry.question">
+                    <p class="question">Q. {{ inquiry.question }}</p>
+                    <p class="answer">A. {{ inquiry.answer }}</p>
+                    <span class="status">{{ inquiry.status }}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div class="seller-card notice-card">
+                <div class="card-header">
+                  <div>
+                    <p class="card-subtitle">공지 사항</p>
+                    <h3>업데이트 소식</h3>
+                  </div>
+                </div>
+                <ul class="notice-list">
+                  <li v-for="notice in sellerNotices" :key="notice.title" class="notice-item">
+                    <div class="notice-meta">
+                      <span class="badge">{{ notice.category }}</span>
+                      <span class="date">{{ notice.date }}</span>
+                    </div>
+                    <p class="notice-title">{{ notice.title }}</p>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <!-- 판매 목록 -->
+          <section
+            v-if="isSeller && activeMenu === 'seller-sales'"
+            class="content-section seller-center"
+          >
+            <h2 class="section-title">판매 목록</h2>
+
+            <div class="seller-center-grid">
+              <div class="seller-card product-card">
+                <div class="card-header align-start">
+                  <div>
+                    <p class="card-subtitle">내 상품 목록</p>
+                    <h3>상품명을 검색하세요</h3>
+                  </div>
+                  <div class="card-actions">
+                    <button class="btn btn-primary btn-sm" @click="goToProductRegister">
+                      + 상품 등록
+                    </button>
+                    <button class="link-button" @click="goToSellerProducts">
+                      전체 보기 →
+                    </button>
+                  </div>
+                </div>
+                <div class="filter-row">
+                  <select v-model="sellerProductCategory">
+                    <option value="all">전체 카테고리</option>
+                  </select>
+                  <input
+                    v-model="sellerProductKeyword"
+                    type="text"
+                    placeholder="상품명을 입력하세요"
+                  />
+                  <button class="btn btn-outline btn-sm">
+                    검색
+                  </button>
+                </div>
+                <div class="empty-state">
+                  <p>등록된 상품이 없습니다</p>
+                  <button class="btn btn-outline btn-sm" @click="goToProductRegister">
+                    상품 등록하기
+                  </button>
+                </div>
+              </div>
+
+              <div class="seller-card gp-card">
+                <div class="card-header align-start">
+                  <div>
+                    <p class="card-subtitle">공동 구매 목록</p>
+                    <h3>공동구매명을 검색하세요</h3>
+                  </div>
+                  <div class="card-actions">
+                    <button class="btn btn-primary btn-sm" @click="goToGroupPurchaseCreate">
+                      + 공동구매 등록
+                    </button>
+                    <button class="link-button" @click="goToGroupPurchaseManage">
+                      전체 보기 →
+                    </button>
+                  </div>
+                </div>
+                <div class="filter-row">
+                  <select v-model="sellerGroupPurchaseCategory">
+                    <option value="all">전체 카테고리</option>
+                  </select>
+                  <input
+                    v-model="sellerGroupPurchaseKeyword"
+                    type="text"
+                    placeholder="공동구매명을 입력하세요"
+                  />
+                  <button class="btn btn-outline btn-sm">
+                    검색
+                  </button>
+                </div>
+                <div class="empty-state">
+                  <p>진행 중인 공동구매가 없습니다</p>
+                  <button class="btn btn-outline btn-sm" @click="goToGroupPurchaseCreate">
+                    공동구매 등록하기
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- 정산 현황 -->
+          <section
+            v-if="isSeller && activeMenu === 'seller-settlement'"
+            class="content-section seller-center"
+          >
+            <h2 class="section-title">정산 현황</h2>
+
+            <div class="seller-center-grid">
+              <div class="seller-card settlement-card">
+                <div class="card-header">
+                  <div>
+                    <p class="card-subtitle">정산 내역</p>
+                    <h3>정산 현황</h3>
+                  </div>
+                  <button class="link-button" @click="goToSellerSettlement">
+                    전체보기 →
+                  </button>
+                </div>
+                <div class="empty-state-lg">
+                  <p>정산 내역이 없습니다</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
         </div>
       </div>
     </div>
@@ -833,6 +1047,57 @@ const router = useRouter()
 // 활성 메뉴 (기본값: 프로필)
 const activeMenu = ref('profile')
 
+// 판매자 센터 데이터
+const sellerAccountInfo = ref({
+  bank: 'IBK기업은행',
+  accountNumber: '111111',
+  owner: '김희영',
+  businessNumber: '111-11-11111',
+  phone: '-',
+  email: 'huiyeong9619@naver.com'
+})
+
+const sellerProductKeyword = ref('')
+const sellerProductCategory = ref('all')
+const sellerGroupPurchaseKeyword = ref('')
+const sellerGroupPurchaseCategory = ref('all')
+
+const sellerInquiries = ref([
+  {
+    question: '아이폰 색상 변경 가능한가요?',
+    answer: '네, 공동구매 종료 전까지 색상 변경 가능합니다. 채팅 또는 문의 남겨주세요.',
+    status: '완료'
+  },
+  {
+    question: '워치 밴드 추가 구매 가능한가요?',
+    answer: '추가 구성으로 실리콘 밴드(₩19,000) 구매 옵션을 열어두었습니다.',
+    status: '완료'
+  },
+  {
+    question: '배송지 변경은 언제까지 되나요?',
+    answer: '결제 후 24시간 이내에만 가능합니다. 배송 탭의 “배송지 변경” 버튼을 이용해주세요.',
+    status: '완료'
+  }
+])
+
+const sellerNotices = ref([
+  {
+    category: '배송',
+    title: '12월 배송 일정 안내',
+    date: '2025-12-01'
+  },
+  {
+    category: '이벤트',
+    title: '신규 공동구매 오픈 예고 (이어폰/태블릿)',
+    date: '2025-11-28'
+  },
+  {
+    category: '공지',
+    title: 'A/S 접수 방법 간소화 안내',
+    date: '상시'
+  }
+])
+
 // 메뉴 변경 시 데이터 로드
 watch(activeMenu, (newMenu) => {
   if (newMenu === 'address' && addressList.value.length === 0) {
@@ -1041,8 +1306,32 @@ const loadCancelledOrders = async (page = 0) => {
   }
 }
 
-const goToSellerPage = () => {
-  router.push('/seller')
+const openSellerMenu = (menu) => {
+  activeMenu.value = menu
+}
+
+const goToSellerProfile = () => {
+  router.push('/seller/profile')
+}
+
+const goToSellerSettlement = () => {
+  router.push('/seller/settlement')
+}
+
+const goToSellerProducts = () => {
+  router.push('/seller/products')
+}
+
+const goToProductRegister = () => {
+  router.push('/seller/register/product-register')
+}
+
+const goToGroupPurchaseCreate = () => {
+  router.push('/group-purchases/create')
+}
+
+const goToGroupPurchaseManage = () => {
+  router.push('/group-purchases')
 }
 
 const goToSellerApplication = () => {
@@ -1857,6 +2146,186 @@ const saveNotificationSettings = async () => {
 
 .content-section {
   animation: fadeIn 0.3s ease-in;
+}
+
+/* 판매자 센터 */
+.seller-center-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.seller-card {
+  background: #111111;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-header.align-start {
+  align-items: flex-start;
+}
+
+.card-subtitle {
+  font-size: 13px;
+  color: #8a8a8a;
+  margin: 0 0 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card-header h3 {
+  margin: 0;
+  font-size: 20px;
+  color: #ffffff;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: #9dbbff;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 8px;
+}
+
+.info-row dt {
+  color: #888;
+  font-weight: 500;
+}
+
+.info-row dd {
+  margin: 0;
+  color: #fff;
+  font-weight: 600;
+}
+
+.empty-state,
+.empty-state-lg {
+  background: #0a0a0a;
+  border: 1px dashed #2a2a2a;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  color: #aaaaaa;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.empty-state-lg {
+  min-height: 180px;
+  justify-content: center;
+}
+
+.filter-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-row select,
+.filter-row input {
+  flex: 1;
+  min-width: 120px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #2a2a2a;
+  background: #0a0a0a;
+  color: #ffffff;
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inquiry-list,
+.notice-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.inquiry-list li {
+  background: #0f0f0f;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.question {
+  font-weight: 600;
+  margin: 0 0 6px 0;
+}
+
+.answer {
+  color: #bbbbbb;
+  margin: 0 0 8px 0;
+}
+
+.status {
+  font-size: 12px;
+  color: #4caf50;
+  font-weight: 700;
+}
+
+.notice-item {
+  background: #0f0f0f;
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.notice-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #a0a0a0;
+}
+
+.badge {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.notice-title {
+  margin: 0;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 @keyframes fadeIn {
@@ -3456,5 +3925,3 @@ textarea:focus {
   }
 }
 </style>
-
-
