@@ -673,60 +673,105 @@
               <div class="seller-card product-card">
                 <div class="card-header align-start">
                   <div>
-                    <p class="card-subtitle">내 상품 목록</p>
-                    <h3>상품명을 검색하세요</h3>
+                    <h3>내 상품 목록</h3>
+                    <p class="card-subtitle">
+                      상세 검색과 관리 기능은 전체 보기 페이지에서 이용할 수 있습니다.
+                    </p>
                   </div>
                   <button class="link-button" @click="goToSellerProducts">
                     전체 보기 →
                   </button>
                 </div>
-                <div class="filter-row">
-                  <div class="input-row">
-                    <select v-model="sellerProductCategory">
-                      <option value="all">전체 카테고리</option>
-                    </select>
-                    <input
-                      v-model="sellerProductKeyword"
-                      type="text"
-                      placeholder="상품명을 입력하세요"
-                    />
+                <div class="seller-mini-section">
+                  <div v-if="sellerProductsLoading" class="mini-loading">
+                    <p>상품 정보를 불러오는 중...</p>
                   </div>
-                  <button class="btn btn-outline btn-sm wide-btn">
-                    검색
-                  </button>
-                </div>
-                <div class="empty-state">
-                  <p>등록된 상품이 없습니다</p>
+                  <div v-else-if="sellerProductsPreview.length === 0" class="mini-empty">
+                    <p>등록된 상품이 없습니다</p>
+                    <button class="btn btn-outline btn-sm" @click="goToProductRegister">
+                      상품 등록하기
+                    </button>
+                  </div>
+                  <div v-else class="seller-mini-list">
+                    <div class="seller-mini-hero">
+                      <div class="hero-info">
+                        <p class="hero-title">{{ sellerProductsPreview[0].title }}</p>
+                        <span class="hero-sub">{{ sellerProductsPreview[0].category }}</span>
+                      </div>
+                      <div class="hero-meta">
+                        <span class="hero-price">₩{{ formatPrice(sellerProductsPreview[0].price) }}</span>
+                        <span class="hero-updated">{{ formatDateShort(sellerProductsPreview[0].updatedAt) }}</span>
+                      </div>
+                    </div>
+                    <div
+                      v-for="product in sellerProductsPreview.slice(1)"
+                      :key="product.id"
+                      class="seller-mini-item"
+                    >
+                      <div class="mini-info">
+                        <p class="mini-title">{{ product.title }}</p>
+                        <span class="mini-sub">{{ product.category }}</span>
+                      </div>
+                      <div class="mini-meta">
+                        <span class="mini-price">₩{{ formatPrice(product.price) }}</span>
+                        <span class="mini-updated">{{ formatDateShort(product.updatedAt) }}</span>
+                      </div>
+                    </div>
+                    <p v-if="sellerProductsAll.length > sellerProductsPreview.length" class="mini-extra">
+                      외 {{ sellerProductsAll.length - sellerProductsPreview.length }}건이 더 있습니다.
+                    </p>
+                  </div>
                 </div>
               </div>
 
               <div class="seller-card gp-card">
                 <div class="card-header align-start">
                   <div>
-                    <p class="card-subtitle">공동 구매 목록</p>
-                    <h3>공동구매명을 검색하세요</h3>
+                    <h3>내 공동구매 목록</h3>
+                    <p class="card-subtitle">
+                      상세 검색과 관리 기능은 전체 보기 페이지에서 이용할 수 있습니다.
+                    </p>
                   </div>
                   <button class="link-button" @click="goToGroupPurchaseManage">
                     전체 보기 →
                   </button>
                 </div>
-                <div class="filter-row">
-                  <div class="input-row">
-                    <select v-model="sellerGroupPurchaseCategory">
-                      <option value="all">전체 카테고리</option>
-                    </select>
-                    <input
-                      v-model="sellerGroupPurchaseKeyword"
-                      type="text"
-                      placeholder="공동구매명을 입력하세요"
-                    />
+                <div class="seller-mini-section">
+                  <div v-if="sellerGroupPurchasesLoading" class="mini-loading">
+                    <p>공동구매 정보를 불러오는 중...</p>
                   </div>
-                  <button class="btn btn-outline btn-sm wide-btn">
-                    검색
-                  </button>
-                </div>
-                <div class="empty-state">
-                  <p>진행 중인 공동구매가 없습니다</p>
+                  <div v-else-if="sellerGroupPurchasesPreview.length === 0" class="mini-empty">
+                    <p>진행 중인 공동구매가 없습니다</p>
+                  </div>
+                  <div v-else class="seller-mini-list">
+                    <div class="seller-mini-hero gp">
+                      <div class="hero-info">
+                        <p class="hero-title">{{ sellerGroupPurchasesPreview[0].title }}</p>
+                        <span class="hero-sub">{{ sellerGroupPurchasesPreview[0].category }}</span>
+                      </div>
+                      <div class="hero-meta">
+                        <span class="hero-price">₩{{ formatPrice(sellerGroupPurchasesPreview[0].discountPrice) }}</span>
+                        <span class="hero-progress">{{ sellerGroupPurchasesPreview[0].currentCount }}/{{ sellerGroupPurchasesPreview[0].maxQuantity }}명</span>
+                      </div>
+                    </div>
+                    <div
+                      v-for="gp in sellerGroupPurchasesPreview.slice(1)"
+                      :key="gp.id"
+                      class="seller-mini-item"
+                    >
+                      <div class="mini-info">
+                        <p class="mini-title">{{ gp.title }}</p>
+                        <span class="mini-sub">{{ gp.category }}</span>
+                      </div>
+                      <div class="mini-meta">
+                        <span class="mini-price">₩{{ formatPrice(gp.discountPrice) }}</span>
+                        <span class="mini-progress">{{ gp.currentCount }}/{{ gp.maxQuantity }}명</span>
+                      </div>
+                    </div>
+                    <p v-if="sellerGroupPurchasesAll.length > sellerGroupPurchasesPreview.length" class="mini-extra">
+                      외 {{ sellerGroupPurchasesAll.length - sellerGroupPurchasesPreview.length }}건이 더 있습니다.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1068,16 +1113,27 @@ const sellerAccountInfo = ref({
   email: 'huiyeong9619@naver.com'
 })
 
-const sellerProductKeyword = ref('')
-const sellerProductCategory = ref('all')
-const sellerGroupPurchaseKeyword = ref('')
-const sellerGroupPurchaseCategory = ref('all')
+const sellerProductsAll = ref([])
+const sellerGroupPurchasesAll = ref([])
+const sellerProductsLoading = ref(false)
+const sellerGroupPurchasesLoading = ref(false)
+const sellerProductsLoaded = ref(false)
+const sellerGroupPurchasesLoaded = ref(false)
 
-const sellerSalesStats = ref([
-  { label: '등록된 상품', value: '0', subtext: '최근 30일 등록' },
-  { label: '진행 중 공동구매', value: '0', subtext: '현재 진행 수' },
-  { label: '금일 주문 요청', value: '0', subtext: '실시간 주문 건' }
+const formatCount = (value) => Number(value || 0).toLocaleString()
+
+const sellerGroupPurchasesOpenCount = computed(() => {
+  return sellerGroupPurchasesAll.value.filter(gp => (gp.status || '').toUpperCase() === 'OPEN').length
+})
+
+const sellerSalesStats = computed(() => [
+  { label: '등록된 상품', value: formatCount(sellerProductsAll.value.length), subtext: '현재 등록된 상품 수' },
+  { label: '진행 중 공동구매', value: formatCount(sellerGroupPurchasesOpenCount.value), subtext: 'OPEN 상태 공동구매' },
+  { label: '전체 공동구매', value: formatCount(sellerGroupPurchasesAll.value.length), subtext: '누적 등록 공동구매' }
 ])
+
+const sellerProductsPreview = computed(() => sellerProductsAll.value.slice(0, 3))
+const sellerGroupPurchasesPreview = computed(() => sellerGroupPurchasesAll.value.slice(0, 3))
 
 const sellerInquiries = ref([
   {
@@ -1115,6 +1171,89 @@ const sellerNotices = ref([
   }
 ])
 
+const sellerProductCategoryMap = {
+  HOME: '생활 & 주방',
+  FOOD: '식품 & 간식',
+  HEALTH: '건강 & 헬스',
+  BEAUTY: '뷰티',
+  FASHION: '패션 & 의류',
+  ELECTRONICS: '전자 & 디지털',
+  KIDS: '유아 & 어린이',
+  HOBBY: '취미',
+  PET: '반려동물'
+}
+
+const sellerGroupCategoryMap = sellerProductCategoryMap
+
+const loadSellerProductsSummary = async () => {
+  if (sellerProductsLoading.value) return
+  sellerProductsLoading.value = true
+  try {
+    const response = await productApi.getProducts({ size: 200 })
+    const data = response.data?.data || response.data
+    const list = Array.isArray(data?.content) ? data.content : Array.isArray(data) ? data : []
+    sellerProductsAll.value = list.map(product => {
+      const categoryKey = product.category || product.categoryCode
+      return {
+        id: product.productId || product.id,
+        title: product.name || product.title || '상품명 미확인',
+        category: sellerProductCategoryMap[categoryKey] || categoryKey || '기타',
+        rawCategory: categoryKey,
+        price: product.price || product.currentPrice || 0,
+        updatedAt: product.updatedAt || product.modifiedAt || product.createdAt,
+        status: product.status || '판매중'
+      }
+    })
+  } catch (error) {
+    console.error('판매자 상품 요약 로드 실패:', error)
+  } finally {
+    sellerProductsLoading.value = false
+    sellerProductsLoaded.value = true
+  }
+}
+
+const loadSellerGroupPurchasesSummary = async () => {
+  if (sellerGroupPurchasesLoading.value) return
+  sellerGroupPurchasesLoading.value = true
+  try {
+    const response = await groupPurchaseApi.getMyGroupPurchases('createdAt,desc')
+    const raw = response.data?.data || response.data
+    const content = raw?.content || raw || []
+    sellerGroupPurchasesAll.value = content.map(gp => {
+      const categoryKey = gp.category
+      return {
+        id: gp.groupPurchaseId || gp.id,
+        title: gp.title || '공동구매명',
+        category: sellerGroupCategoryMap[categoryKey] || categoryKey || '기타',
+        rawCategory: categoryKey,
+        seller: gp.sellerName || '판매자',
+        discountPrice: gp.discountedPrice || gp.discountPrice || gp.price || 0,
+        originalPrice: gp.price || gp.originalPrice || gp.discountPrice || 0,
+        currentCount: gp.currentQuantity || gp.currentCount || 0,
+        maxQuantity: gp.maxQuantity || gp.maxCount || 0,
+        status: gp.status || 'OPEN',
+        startDate: gp.startDate,
+        endDate: gp.endDate
+      }
+    })
+  } catch (error) {
+    console.error('판매자 공동구매 요약 로드 실패:', error)
+  } finally {
+    sellerGroupPurchasesLoading.value = false
+    sellerGroupPurchasesLoaded.value = true
+  }
+}
+
+const ensureSellerSalesData = async () => {
+  if (!isSeller.value) return
+  if (!sellerProductsLoaded.value) {
+    await loadSellerProductsSummary()
+  }
+  if (!sellerGroupPurchasesLoaded.value) {
+    await loadSellerGroupPurchasesSummary()
+  }
+}
+
 // 메뉴 변경 시 데이터 로드
 watch(activeMenu, (newMenu) => {
   if (newMenu === 'address' && addressList.value.length === 0) {
@@ -1125,6 +1264,9 @@ watch(activeMenu, (newMenu) => {
   }
   if (newMenu === 'notification-settings' && notificationSettings.value.length === 0) {
     loadNotificationSettings()
+  }
+  if (newMenu === 'seller-center' || newMenu === 'seller-sales') {
+    ensureSellerSalesData()
   }
 })
 
@@ -1544,6 +1686,19 @@ const formatDate = (dateString) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('ko-KR', {
       year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    })
+  } catch (e) {
+    return dateString
+  }
+}
+
+const formatDateShort = (dateString) => {
+  if (!dateString) return '-'
+  try {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('ko-KR', {
       month: '2-digit',
       day: '2-digit'
     })
@@ -2239,6 +2394,148 @@ const saveNotificationSettings = async () => {
   gap: 24px;
 }
 
+.mini-loading {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  color: #bdbdbd;
+  font-size: 14px;
+}
+
+.seller-mini-section {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mini-empty {
+  text-align: center;
+  padding: 24px;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  color: #c0c0c0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.seller-mini-hero {
+  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.seller-mini-hero.gp {
+  background: radial-gradient(circle at top, rgba(153, 202, 255, 0.12), rgba(255, 255, 255, 0.02));
+}
+
+.hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hero-title {
+  margin: 0;
+  font-size: 18px;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.hero-sub {
+  font-size: 13px;
+  color: #a0a0a0;
+}
+
+.hero-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.hero-price {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.hero-progress,
+.hero-updated {
+  font-size: 13px;
+  color: #cfcfcf;
+}
+
+.seller-mini-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.seller-mini-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.seller-mini-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.mini-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mini-title {
+  margin: 0;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.mini-sub {
+  font-size: 13px;
+  color: #a0a0a0;
+}
+
+.mini-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  font-size: 13px;
+  color: #cfcfcf;
+}
+
+.mini-price {
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.mini-progress {
+  font-size: 12px;
+  color: #a0a0a0;
+}
+
+.mini-extra {
+  margin: 8px 0 0 0;
+  font-size: 13px;
+  color: #9dbbff;
+}
+
 .seller-card {
   background: #111111;
   border: 1px solid #2a2a2a;
@@ -2326,37 +2623,15 @@ const saveNotificationSettings = async () => {
   justify-content: center;
 }
 
-.filter-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.filter-row select,
-.filter-row input {
-  flex: 1;
-  min-width: 120px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 1px solid #2a2a2a;
-  background: #0a0a0a;
-  color: #ffffff;
-}
-
-.input-row {
-  display: flex;
-  flex: 1;
-  gap: 12px;
-}
-
-.input-row select,
-.input-row input {
-  flex: 1;
-}
-
-.wide-btn {
-  min-width: 120px;
+.card-description {
+  margin: 8px 0 0 0;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  color: #c5c5c5;
+  font-size: 14px;
+  line-height: 1.4;
+  border: 1px dashed rgba(255, 255, 255, 0.08);
 }
 
 .card-actions {

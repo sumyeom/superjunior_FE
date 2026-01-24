@@ -6,6 +6,46 @@
         <p>등록한 모든 상품을 확인하고 관리할 수 있습니다.</p>
       </div>
 
+      <div
+        v-if="!loading"
+        class="filters-bar"
+      >
+        <div class="filter-group">
+          <label for="seller-category-select">카테고리</label>
+          <select
+            id="seller-category-select"
+            v-model="selectedCategory"
+          >
+            <option value="all">전체 카테고리</option>
+            <option
+              v-for="option in categoryOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+        <div class="filter-group search-group">
+          <label for="seller-search-input">상품명</label>
+          <div class="search-control">
+            <input
+              id="seller-search-input"
+              v-model="searchKeyword"
+              type="text"
+              placeholder="상품명을 입력하세요"
+              @keyup.enter="handleSearch"
+            />
+            <button class="btn btn-outline" @click="handleSearch">
+              검색
+            </button>
+          </div>
+        </div>
+        <button class="btn-text" @click="resetFilters">
+          필터 초기화
+        </button>
+      </div>
+
       <div v-if="loading" class="loading-state">
         <p>상품 목록을 불러오는 중...</p>
       </div>
@@ -17,53 +57,62 @@
         </router-link>
       </div>
 
-      <div v-else class="products-grid">
-        <div v-for="product in sellerProducts" :key="product.id" class="product-card">
-          <div class="product-image-wrapper">
-            <img :src="product.image || product.images?.[0]" :alt="product.title" />
-            <div class="product-badges">
-              <span v-if="product.currentCount >= product.targetCount" class="badge badge-success">목표 달성</span>
-              <span v-if="product.currentCount < product.targetCount * 0.3" class="badge badge-new">신규</span>
-            </div>
-          </div>
-          <div class="product-info">
-            <p class="product-category">{{ product.category }}</p>
-            <h3 class="product-title">{{ product.title }}</h3>
-            <p class="product-subtitle">{{ product.subtitle }}</p>
-            <div class="product-price-info">
-              <span class="current-price">₩{{ product.currentPrice?.toLocaleString() || product.price?.toLocaleString() }}</span>
-              <span v-if="product.originalPrice" class="original-price">₩{{ product.originalPrice.toLocaleString() }}</span>
-            </div>
-            <div class="product-progress">
-              <div class="progress-info">
-                <span class="progress-text">
-                  재고: {{ product.stock }}개
-                </span>
-                <span class="progress-percent">
-                  {{ Math.round(((product.currentCount || 0) / product.targetCount) * 100) }}%
-                </span>
-              </div>
-              <div class="progress-bar">
-                <div
-                  class="progress-fill"
-                  :style="{ width: `${Math.min(((product.currentCount || 0) / product.targetCount) * 100, 100)}%` }"
-                ></div>
+      <div v-else>
+        <div v-if="filteredProducts.length === 0" class="empty-state">
+          <p>조건에 맞는 상품이 없습니다.</p>
+          <button class="btn btn-primary" @click="resetFilters">
+            필터 초기화
+          </button>
+        </div>
+
+        <div v-else class="products-grid">
+          <div v-for="product in pagedProducts" :key="product.id" class="product-card">
+            <div class="product-image-wrapper">
+              <img :src="product.image || product.images?.[0]" :alt="product.title" />
+              <div class="product-badges">
+                <span v-if="product.currentCount >= product.targetCount" class="badge badge-success">목표 달성</span>
+                <span v-if="product.currentCount < product.targetCount * 0.3" class="badge badge-new">신규</span>
               </div>
             </div>
-            <div class="product-meta">
-              <span class="rating">⭐ {{ product.rating || 0 }}</span>
-              <span class="reviews">리뷰 {{ product.reviewCount || 0 }}</span>
-            </div>
-            <div class="product-actions">
-              <button class="btn btn-outline" @click="viewProduct(product.id)">상세보기</button>
-              <button class="btn btn-outline" @click="editProduct(product.id)">수정</button>
-              <button class="btn btn-outline btn-danger" @click="deleteProduct(product.id)">삭제</button>
+            <div class="product-info">
+              <p class="product-category">{{ product.category }}</p>
+              <h3 class="product-title">{{ product.title }}</h3>
+              <p class="product-subtitle">{{ product.subtitle }}</p>
+              <div class="product-price-info">
+                <span class="current-price">₩{{ product.currentPrice?.toLocaleString() || product.price?.toLocaleString() }}</span>
+                <span v-if="product.originalPrice" class="original-price">₩{{ product.originalPrice.toLocaleString() }}</span>
+              </div>
+              <div class="product-progress">
+                <div class="progress-info">
+                  <span class="progress-text">
+                    재고: {{ product.stock }}개
+                  </span>
+                  <span class="progress-percent">
+                    {{ Math.round(((product.currentCount || 0) / product.targetCount) * 100) }}%
+                  </span>
+                </div>
+                <div class="progress-bar">
+                  <div
+                    class="progress-fill"
+                    :style="{ width: `${Math.min(((product.currentCount || 0) / product.targetCount) * 100, 100)}%` }"
+                  ></div>
+                </div>
+              </div>
+              <div class="product-meta">
+                <span class="rating">⭐ {{ product.rating || 0 }}</span>
+                <span class="reviews">리뷰 {{ product.reviewCount || 0 }}</span>
+              </div>
+              <div class="product-actions">
+                <button class="btn btn-outline" @click="viewProduct(product.id)">상세보기</button>
+                <button class="btn btn-outline" @click="editProduct(product.id)">수정</button>
+                <button class="btn btn-outline btn-danger" @click="deleteProduct(product.id)">삭제</button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div v-if="totalPages > 1" class="pagination">
+      <div v-if="filteredProducts.length > 0 && totalPages > 1" class="pagination">
         <button
           class="page-btn"
           :disabled="page === 0"
@@ -87,7 +136,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { productApi } from '@/api/axios'
 
@@ -96,8 +145,8 @@ const router = useRouter()
 const loading = ref(false)
 const page = ref(0)
 const size = ref(9)
-const totalPages = ref(0)
-const totalElements = ref(0)
+const searchKeyword = ref('')
+const selectedCategory = ref('all')
 
 // 카테고리 한글 변환
 const categoryMap = {
@@ -141,6 +190,7 @@ const transformProduct = (product) => {
     price: product.price,
     originalPrice: null,
     category: categoryMap[product.category] || product.category,
+    rawCategory: product.category,
     image: image,
     stock: 0,
     description: '',
@@ -153,22 +203,50 @@ const transformProduct = (product) => {
   }
 }
 const sellerProducts = ref([])
+const filteredProducts = computed(() => {
+  let list = sellerProducts.value
+
+  if (selectedCategory.value !== 'all') {
+    list = list.filter(product => product.rawCategory === selectedCategory.value)
+  }
+
+  const keyword = searchKeyword.value.trim().toLowerCase()
+  if (keyword) {
+    list = list.filter(product =>
+      product.title?.toLowerCase().includes(keyword)
+    )
+  }
+
+  return list
+})
+
+const pagedProducts = computed(() => {
+  const start = page.value * size.value
+  return filteredProducts.value.slice(start, start + size.value)
+})
+
+const totalPages = computed(() => {
+  if (filteredProducts.value.length === 0) return 0
+  return Math.ceil(filteredProducts.value.length / size.value)
+})
+
+const categoryOptions = computed(() => {
+  return Object.entries(categoryMap).map(([value, label]) => ({
+    value,
+    label
+  }))
+})
+
 const loadProducts = async () => {
   loading.value = true
   try {
     const response = await productApi.getProducts()
     const data = response.data?.data || response.data
     const list = Array.isArray(data?.content) ? data.content : Array.isArray(data) ? data : []
-    totalElements.value = list.length
-    totalPages.value = Math.ceil(list.length / size.value)
-    const start = page.value * size.value
-    const end = start + size.value
-    sellerProducts.value = list.slice(start, end).map(transformProduct)
+    sellerProducts.value = list.map(transformProduct)
   } catch (error) {
     console.error('상품 목록 조회 실패:', error)
     sellerProducts.value = []
-    totalElements.value = 0
-    totalPages.value = 0
   } finally {
     loading.value = false
   }
@@ -177,7 +255,6 @@ const loadProducts = async () => {
 const goToPage = (nextPage) => {
   if (nextPage < 0 || nextPage >= totalPages.value) return
   page.value = nextPage
-  loadProducts()
 }
 
 const viewProduct = (id) => {
@@ -208,6 +285,27 @@ const deleteProduct = async (id) => {
     console.error('Product deletion error:', error)
   }
 }
+
+const handleSearch = () => {
+  page.value = 0
+}
+
+const resetFilters = () => {
+  searchKeyword.value = ''
+  selectedCategory.value = 'all'
+  page.value = 0
+}
+
+watch([searchKeyword, selectedCategory], () => {
+  page.value = 0
+})
+
+watch(filteredProducts, () => {
+  const maxPage = Math.max(0, totalPages.value - 1)
+  if (page.value > maxPage) {
+    page.value = 0
+  }
+})
 
 onMounted(() => {
   loadProducts()
@@ -241,6 +339,60 @@ onMounted(() => {
 .page-header p {
   color: #a0a0a0;
   font-size: 15px;
+}
+
+.filters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  margin-bottom: 24px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-group label {
+  color: #a0a0a0;
+  font-size: 14px;
+}
+
+.filter-group select,
+.search-control input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #2a2a2a;
+  background: #111111;
+  color: #ffffff;
+}
+
+.search-control {
+  display: flex;
+  gap: 10px;
+}
+
+.search-control .btn {
+  flex: 0 0 auto;
+  min-width: 110px;
+}
+
+.btn-text {
+  background: transparent;
+  border: none;
+  color: #9dbbff;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: center;
+}
+
+.btn-text:hover {
+  text-decoration: underline;
 }
 
 .empty-state {
@@ -518,9 +670,5 @@ onMounted(() => {
   color: #ffffff;
 }
 </style>
-
-
-
-
 
 

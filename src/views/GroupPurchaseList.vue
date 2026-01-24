@@ -12,215 +12,181 @@
         </button>
       </div>
 
-      <div class="filters">
-        <div class="filter-row">
-          <div class="search">
+      <div
+        v-if="!loading"
+        class="filters-bar"
+      >
+        <div class="filter-group">
+          <label for="gp-category-select">카테고리</label>
+          <select
+            id="gp-category-select"
+            v-model="categoryFilter"
+          >
+            <option value="all">전체 카테고리</option>
+            <option
+              v-for="option in categoryOptions"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="gp-status-select">상태</label>
+          <select
+            id="gp-status-select"
+            v-model="statusFilter"
+          >
+            <option value="all">전체 상태</option>
+            <option value="SCHEDULED">예정됨</option>
+            <option value="OPEN">진행 중</option>
+            <option value="SUCCESS">성공</option>
+            <option value="FAILED">실패</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="gp-sort-select">정렬</label>
+          <select
+            id="gp-sort-select"
+            v-model="sortFilter"
+            @change="handleSortChange"
+          >
+            <option value="createdAt,desc">최근 등록순</option>
+            <option value="currentQuantity,desc">인기순</option>
+            <option value="endDate,asc">마감 임박순</option>
+          </select>
+        </div>
+
+        <div class="filter-group search-group">
+          <label for="gp-search-input">공동구매명</label>
+          <div class="search-control">
             <input
-              v-model.trim="keyword"
-              type="search"
-              placeholder="제목으로 검색"
-              @keyup.enter="search"
+              id="gp-search-input"
+              v-model="searchKeyword"
+              type="text"
+              placeholder="공동구매명을 입력하세요"
+              @keyup.enter="handleSearch"
             />
-            <button class="btn btn-outline" @click="search">검색</button>
-          </div>
-          <div class="filter-actions">
-            <select v-model="sortFilter" class="sort-filter" @change="loadGroupPurchases">
-              <option value="">최신순</option>
-              <option value="currentQuantity,desc">인기순</option>
-              <option value="endDate,asc">마감 직전 순</option>
-              <option value="createdAt,desc">등록순</option>
-            </select>
-            <select v-model="statusFilter" class="status-filter">
-              <option value="">전체 상태</option>
-              <option value="SCHEDULED">예정됨</option>
-              <option value="OPEN">진행 중</option>
-              <option value="SUCCESS">성공</option>
-              <option value="FAILED">실패</option>
-            </select>
-            <select v-model="categoryFilter" class="category-filter">
-              <option value="">전체 카테고리</option>
-              <option value="전자제품">전자제품</option>
-              <option value="패션">패션</option>
-              <option value="식품">식품</option>
-              <option value="뷰티">뷰티</option>
-              <option value="홈/리빙">홈/리빙</option>
-              <option value="기타">기타</option>
-            </select>
+            <button class="btn btn-outline" @click="handleSearch">
+              검색
+            </button>
           </div>
         </div>
+
+        <button class="btn-text" @click="resetFilters">
+          필터 초기화
+        </button>
       </div>
 
-      <div v-if="loading" class="empty-state">
-        <p>로딩 중...</p>
+      <div v-if="loading" class="loading-state">
+        <p>공동구매 목록을 불러오는 중...</p>
       </div>
 
-      <div v-else-if="filteredGroupPurchases.length === 0" class="empty-state">
-        <p>조건에 맞는 공동구매가 없습니다.</p>
-        <button v-if="isSeller" class="btn btn-primary" @click="goToCreate">공동구매 생성하기</button>
-      </div>
-
-      <div v-else class="group-purchase-list-container">
-        <div class="gp-list-header">
-          <div class="gp-col gp-col-status">상태</div>
-          <div class="gp-col gp-col-title">공동구매명</div>
-          <div class="gp-col gp-col-price">가격</div>
-          <div class="gp-col gp-col-progress">진행률</div>
-          <div class="gp-col gp-col-time">남은 시간</div>
-          <div class="gp-col gp-col-action">관리</div>
+      <div v-else>
+        <div v-if="filteredGroupPurchases.length === 0" class="empty-state">
+          <p>조건에 맞는 공동구매가 없습니다.</p>
+          <button v-if="isSeller" class="btn btn-primary" @click="goToCreate">공동구매 생성하기</button>
         </div>
-        <article
-          v-for="gp in filteredGroupPurchases"
-          :key="gp.id"
-          class="group-purchase-item"
-          :class="{ 'expanded': expandedId === gp.id }"
-        >
-          <div class="gp-list-row" @click="handleCardClick(gp.id, gp)">
-            <div class="gp-col gp-col-status">
-              <span class="status-badge" :class="gp.status.toLowerCase()">
-                {{ getStatusText(gp.status) }}
-              </span>
-            </div>
-            <div class="gp-col gp-col-title">
-              <div class="title-wrapper">
-                <h3 class="title">{{ gp.title }}</h3>
-                <span class="category">{{ gp.category }}</span>
-              </div>
-            </div>
-            <div class="gp-col gp-col-price">
-              <div class="price-wrapper">
-                <span class="discount-price">₩{{ gp.discountPrice.toLocaleString() }}</span>
-                <span class="original-price">₩{{ gp.originalPrice.toLocaleString() }}</span>
-              </div>
-            </div>
-            <div class="gp-col gp-col-progress">
-              <div class="progress-wrapper">
-                <div class="progress-info">
-                  <span class="progress-text">{{ gp.currentCount }} / {{ gp.maxQuantity }}명</span>
-                  <span class="progress-percent">{{ Math.round((gp.currentCount / gp.maxQuantity) * 100) }}%</span>
-                </div>
-                <div class="progress-bar">
-                  <div
-                    class="progress-fill"
-                    :style="{ width: `${Math.min((gp.currentCount / gp.maxQuantity) * 100, 100)}%` }"
-                  ></div>
-                </div>
-              </div>
-            </div>
-            <div class="gp-col gp-col-time">
-              <span class="time-text">
-                <span v-if="gp.endDate">{{ getTimeRemaining(gp.endDate) }}</span>
-                <span v-else>기간 미정</span>
-              </span>
-            </div>
-            <div class="gp-col gp-col-action">
-              <!-- 소유자인 경우 관리 버튼, 아닌 경우 참여/장바구니 -->
-              <div v-if="!route.query.sellerId || isOwner(gp)" class="action-buttons">
-                <!-- SCHEDULED (예정됨): 수정 + 삭제 -->
-                <template v-if="gp.status === 'SCHEDULED'">
-                  <button
-                    class="btn btn-sm btn-outline"
-                    @click.stop="handleEdit(gp.id)"
-                  >
-                    수정
-                  </button>
-                  <button
-                    class="btn btn-sm btn-danger-outline"
-                    @click.stop="handleDelete(gp.id)"
-                  >
-                    삭제
-                  </button>
-                </template>
-                <!-- OPEN (진행중): 수정만 -->
-                <button
-                  v-else-if="gp.status === 'OPEN'"
-                  class="btn btn-sm btn-outline"
-                  @click.stop="handleEdit(gp.id)"
-                >
-                  수정
-                </button>
-                <!-- 기타 상태: 드롭다운 -->
-                <button
-                  v-else
-                  class="expand-btn"
-                  @click.stop="handleCardClick(gp.id, gp)"
-                >
-                  <span>{{ expandedId === gp.id ? '▼' : '▶' }}</span>
-                </button>
-              </div>
-              <div v-else class="action-buttons">
-                <button
-                  class="btn btn-sm btn-outline"
-                  :disabled="gp.status !== 'OPEN'"
-                  @click.stop="addToCartFromList(gp.id)"
-                >
-                  장바구니
-                </button>
-                <button
-                  class="btn btn-sm btn-primary"
-                  :disabled="gp.status !== 'OPEN'"
-                  @click.stop="goToDetail(gp.id)"
-                >
-                  참여하기
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          <!-- 주문 내역 드롭다운 (판매자만) -->
-          <!-- <div v-if="isSeller && isOwner(gp) && expandedId === gp.id" class="order-dropdown"> -->
-          <div v-if="expandedId === gp.id" class="order-dropdown">
-            <div class="order-header-section">
-              <h4>주문 내역</h4>
-              <span class="order-count">총 {{ getOrdersForGroupPurchase(gp.id).length }}건</span>
-            </div>
-            <div v-if="getOrdersForGroupPurchase(gp.id).length === 0" class="no-orders">
-              <p>아직 주문 내역이 없습니다.</p>
-            </div>
-            <div v-else class="order-list">
-              <div class="order-list-header">
-                <div class="order-col order-col-number">주문번호</div>
-                <div class="order-col order-col-date">주문일자</div>
-                <div class="order-col order-col-customer">구매자</div>
-                <div class="order-col order-col-product">상품명</div>
-                <div class="order-col order-col-quantity">수량</div>
-                <div class="order-col order-col-amount">결제금액</div>
-                <div class="order-col order-col-status">상태</div>
-              </div>
-              <div
-                v-for="order in getOrdersForGroupPurchase(gp.id)"
-                :key="order.id"
-                class="order-item-row"
-              >
-                <div class="order-col order-col-number">
-                  <span class="order-number-text">{{ order.orderNumber || `ORD-${order.id}` }}</span>
-                </div>
-                <div class="order-col order-col-date">
-                  <span class="order-date-text">{{ formatDate(order.date || order.createdAt) }}</span>
-                </div>
-                <div class="order-col order-col-customer">
-                  <div class="customer-info">
-                    <span class="customer-name">{{ order.customerName || order.name || '익명' }}</span>
-                    <span v-if="order.email" class="customer-email">{{ order.email }}</span>
-                  </div>
-                </div>
-                <div class="order-col order-col-product">
-                  <span class="product-name-text">{{ (order.products && order.products[0]) ? (order.products[0].title || order.products[0].productName) : (gp.productName) }}</span>
-                </div>
-                <div class="order-col order-col-quantity">
-                  <span class="quantity-text">{{ (order.products && order.products[0]) ? (order.products[0].quantity || 1) : (order.quantity || 1) }}개</span>
-                </div>
-                <div class="order-col order-col-amount">
-                  <span class="amount-text">₩{{ (order.totalAmount || (order.price || gp.discountPrice) * (order.quantity || 1)).toLocaleString() }}</span>
-                </div>
-                <div class="order-col order-col-status">
-                  <span class="order-status" :class="order.status || 'pending'">
-                    {{ getOrderStatusText(order.status) }}
+
+        <section class="product-grid-section">
+          <div class="product-grid">
+            <article
+              v-for="gp in pagedGroupPurchases"
+              :key="gp.id"
+              class="product-card"
+              @click="goToDetail(gp.id)"
+            >
+              <div class="image-wrapper">
+                <img :src="gp.image" :alt="gp.title" />
+                <div class="badge-group">
+                  <span class="badge status-badge" :class="gp.status.toLowerCase()">
+                    {{ getStatusText(gp.status) }}
+                  </span>
+                  <span class="badge" v-if="gp.endDate">
+                    {{ getTimeRemaining(gp.endDate) }}
                   </span>
                 </div>
               </div>
-            </div>
+
+              <div class="card-body">
+                <p class="category">{{ gp.category }}</p>
+                <h2>{{ gp.title }}</h2>
+                <p class="subtitle">{{ gp.seller }}</p>
+
+                <div class="price-row">
+                  <p class="current-price">₩{{ formatCurrency(gp.discountPrice) }}</p>
+                  <p class="meta">
+                    <span class="original">₩{{ formatCurrency(gp.originalPrice) }}</span>
+                  </p>
+                </div>
+
+                <div class="progress">
+                  <div class="progress-head">
+                    <span>{{ gp.currentCount }}명 참여</span>
+                    <span>목표 {{ gp.maxQuantity }}명</span>
+                  </div>
+                  <div class="progress-bar">
+                    <div
+                      class="progress-fill"
+                      :style="{ width: `${Math.min((gp.currentCount / gp.maxQuantity) * 100, 100)}%` }"
+                    ></div>
+                  </div>
+                </div>
+
+                <div class="card-footer">
+                  <span class="time">
+                    ⏰ {{ gp.endDate ? getTimeRemaining(gp.endDate) : '기간 미정' }}
+                  </span>
+                  <div class="footer-actions">
+                    <template v-if="isOwner(gp)">
+                      <button class="btn btn-outline btn-sm" @click.stop="handleEdit(gp.id)">수정</button>
+                      <button class="btn btn-outline btn-sm btn-danger" @click.stop="handleDelete(gp.id)">삭제</button>
+                    </template>
+                    <template v-else>
+                      <button
+                        class="btn btn-outline btn-sm"
+                        :disabled="gp.status !== 'OPEN'"
+                        @click.stop="addToCartFromList(gp.id)"
+                      >
+                        장바구니
+                      </button>
+                      <button
+                        class="btn btn-primary btn-sm"
+                        :disabled="gp.status !== 'OPEN'"
+                        @click.stop="goToDetail(gp.id)"
+                      >
+                        참여하기
+                      </button>
+                    </template>
+                  </div>
+                </div>
+              </div>
+            </article>
           </div>
-        </article>
+        </section>
+      </div>
+
+      <div v-if="filteredGroupPurchases.length > 0 && totalPages > 1" class="pagination">
+        <button
+          class="page-btn"
+          :disabled="page === 0"
+          @click="goToPage(page - 1)"
+        >
+          이전
+        </button>
+        <span class="page-info">
+          {{ page + 1 }} / {{ totalPages }}
+        </span>
+        <button
+          class="page-btn"
+          :disabled="page + 1 >= totalPages"
+          @click="goToPage(page + 1)"
+        >
+          다음
+        </button>
       </div>
     </div>
   </main>
@@ -235,12 +201,13 @@ const router = useRouter()
 const route = useRoute()
 
 const groupPurchases = ref([])
-const keyword = ref('')
-const statusFilter = ref('')
-const categoryFilter = ref('')
-const sortFilter = ref('')
-const expandedId = ref(null)
+const searchKeyword = ref('')
+const statusFilter = ref('all')
+const categoryFilter = ref('all')
+const sortFilter = ref('createdAt,desc')
 const loading = ref(false)
+const page = ref(0)
+const size = ref(8)
 
 // 카테고리별 기본 이미지
 const categoryImages = {
@@ -276,28 +243,71 @@ const currentSellerId = computed(() => {
   return localStorage.getItem('user_email') || ''
 })
 
+const sortFieldMap = {
+  currentQuantity: 'currentCount',
+  createdAt: 'createdAt',
+  endDate: 'endDate'
+}
+
+const getComparableValue = (item, field) => {
+  if (!item) return 0
+  const value = item[field]
+  if (field === 'createdAt' || field === 'endDate' || field === 'startDate') {
+    return value ? new Date(value).getTime() : 0
+  }
+  return typeof value === 'number' ? value : Number(value) || 0
+}
+
 const filteredGroupPurchases = computed(() => {
   let result = [...groupPurchases.value]
 
-  if (keyword.value) {
-    const keywordLower = keyword.value.toLowerCase()
-    result = result.filter(
-      (gp) =>
-        gp.title.toLowerCase().includes(keywordLower) ||
-        gp.productName.toLowerCase().includes(keywordLower) ||
-        gp.seller.toLowerCase().includes(keywordLower)
-    )
+  if (categoryFilter.value !== 'all') {
+    result = result.filter((gp) => gp.rawCategory === categoryFilter.value)
   }
 
-  if (statusFilter.value) {
+  if (statusFilter.value !== 'all') {
     result = result.filter((gp) => gp.status === statusFilter.value)
   }
 
-  if (categoryFilter.value) {
-    result = result.filter((gp) => gp.category === categoryFilter.value)
+  const keyword = searchKeyword.value.trim().toLowerCase()
+  if (keyword) {
+    result = result.filter(
+      (gp) =>
+        gp.title.toLowerCase().includes(keyword) ||
+        gp.productName.toLowerCase().includes(keyword) ||
+        gp.seller.toLowerCase().includes(keyword)
+    )
   }
 
+  const [sortFieldKey, direction = 'desc'] = (sortFilter.value || 'createdAt,desc').split(',')
+  const targetField = sortFieldMap[sortFieldKey] || sortFieldKey || 'createdAt'
+  const dir = direction === 'asc' ? 1 : -1
+
+  result.sort((a, b) => {
+    const aVal = getComparableValue(a, targetField)
+    const bVal = getComparableValue(b, targetField)
+    if (aVal === bVal) return 0
+    return aVal > bVal ? dir : -dir
+  })
+
   return result
+})
+
+const pagedGroupPurchases = computed(() => {
+  const start = page.value * size.value
+  return filteredGroupPurchases.value.slice(start, start + size.value)
+})
+
+const totalPages = computed(() => {
+  if (filteredGroupPurchases.value.length === 0) return 0
+  return Math.ceil(filteredGroupPurchases.value.length / size.value)
+})
+
+const categoryOptions = computed(() => {
+  return Object.entries(categoryMap).map(([value, label]) => ({
+    value,
+    label
+  }))
 })
 
 const loadGroupPurchases = async () => {
@@ -365,10 +375,6 @@ const loadGroupPurchases = async () => {
   }
 }
 
-const search = () => {
-  // 검색은 computed에서 처리
-}
-
 const getStatusText = (status) => {
   const statusMap = {
     SCHEDULED: '예정됨',
@@ -395,6 +401,11 @@ const getTimeRemaining = (endDate) => {
   return `${minutes}분 남음`
 }
 
+const formatCurrency = (value) => {
+  const num = Number(value || 0)
+  return num.toLocaleString()
+}
+
 const isOwner = (gp) => {
   const memberId = localStorage.getItem('member_id')
   const userEmail = localStorage.getItem('user_email')
@@ -408,16 +419,6 @@ const isOwner = (gp) => {
 
   // sellerId가 member_id, user_email 중 하나와 일치하면 소유자로 판단
   return gp.sellerId === memberId || gp.sellerId === userEmail || gp.sellerId === currentSellerId.value
-}
-
-const handleCardClick = (id, gp) => {
-  if (isSeller.value && isOwner(gp)) {
-    // 판매자이고 소유자인 경우 드롭다운 토글
-    expandedId.value = expandedId.value === id ? null : id
-  } else {
-    // 일반 사용자이거나 소유자가 아닌 경우 상세 페이지로 이동
-    goToDetail(id)
-  }
 }
 
 const goToDetail = (id) => {
@@ -449,93 +450,22 @@ const handleDelete = async (id) => {
   }
 }
 
-const getOrdersForGroupPurchase = (groupId) => {
-  // localStorage에서 주문 내역 가져오기
-  const allOrders = JSON.parse(localStorage.getItem('orders') || '[]')
-  
-  // 공동구매의 participants를 기반으로 주문 내역 생성
-  const gp = groupPurchases.value.find(g => g.id === groupId)
-  if (!gp) return []
-  
-  let orders = []
-  
-  // participants가 있으면 주문 내역으로 변환
-  if (gp.participants && gp.participants.length > 0) {
-    orders = gp.participants.map((participant, index) => ({
-      id: `order-${groupId}-${index}`,
-      orderNumber: `ORD-${groupId}-${index + 1}`,
-      date: participant.date || participant.createdAt || new Date().toISOString(),
-      customerName: participant.name || participant.customerName || '익명',
-      email: participant.email || '',
-      quantity: participant.quantity || 1,
-      price: gp.discountPrice,
-      totalAmount: (participant.quantity || 1) * gp.discountPrice,
-      status: participant.status || 'completed',
-      products: [{
-        id: groupId,
-        title: gp.productName,
-        quantity: participant.quantity || 1,
-        price: gp.discountPrice
-      }]
-    }))
-  }
-  
-  // participants가 없으면 localStorage의 주문 내역에서 필터링
-  if (orders.length === 0) {
-    orders = allOrders.filter(order => {
-      // 주문 내역에 groupPurchaseId가 있으면 매칭
-      if (order.groupPurchaseId === groupId) return true
-      // 주문 내역의 제품명이 공동구매 제품명과 일치하면 매칭
-      if (order.products && order.products.some(p => p.title === gp.productName)) return true
-      return false
-    })
-  }
-  
-  // 실제 주문 내역이 없으면 예시 데이터 생성
-  if (orders.length === 0) {
-    const now = new Date()
-    const exampleCustomers = [
-      { name: '김철수', email: 'kim@example.com' },
-      { name: '이영희', email: 'lee@example.com' },
-      { name: '박민수', email: 'park@example.com' },
-      { name: '최지은', email: 'choi@example.com' },
-      { name: '정대현', email: 'jung@example.com' }
-    ]
-    
-    const statuses = ['completed', 'shipping', 'pending', 'delivered']
-    
-    // 공동구매 참여자 수만큼 예시 주문 생성 (최대 5개)
-    const orderCount = Math.min(gp.currentCount || 3, 5)
-    
-    orders = Array.from({ length: orderCount }, (_, index) => {
-      const customer = exampleCustomers[index % exampleCustomers.length]
-      const quantity = Math.floor(Math.random() * 3) + 1 // 1~3개
-      const orderDate = new Date(now.getTime() - (index * 24 * 60 * 60 * 1000)) // 최근 며칠 전
-      const status = statuses[index % statuses.length]
-      
-      return {
-        id: `example-order-${groupId}-${index}`,
-        orderNumber: `ORD-${groupId}-${String(index + 1).padStart(4, '0')}`,
-        date: orderDate.toISOString(),
-        createdAt: orderDate.toISOString(),
-        customerName: customer.name,
-        email: customer.email,
-        quantity: quantity,
-        price: gp.discountPrice,
-        totalAmount: quantity * gp.discountPrice,
-        status: status,
-        products: [{
-          id: groupId,
-          title: gp.productName,
-          productName: gp.productName,
-          quantity: quantity,
-          price: gp.discountPrice
-        }]
-      }
-    })
-  }
-  
-  return orders
+const handleSearch = () => {
+  page.value = 0
+}
+
+const resetFilters = () => {
+  searchKeyword.value = ''
+  categoryFilter.value = 'all'
+  statusFilter.value = 'all'
+  sortFilter.value = 'createdAt,desc'
+  page.value = 0
+  loadGroupPurchases()
+}
+
+const handleSortChange = () => {
+  page.value = 0
+  loadGroupPurchases()
 }
 
 // 장바구니 담기 (목록, 수량 기본 1)
@@ -565,27 +495,6 @@ const addToCartFromList = async (groupPurchaseId) => {
   }
 }
 
-const formatDate = (dateString) => {
-  if (!dateString) return '-'
-  const date = new Date(dateString)
-  return date.toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
-}
-
-const getOrderStatusText = (status) => {
-  const statusMap = {
-    pending: '주문 대기',
-    completed: '결제 완료',
-    shipping: '배송 중',
-    delivered: '배송 완료',
-    cancelled: '취소됨'
-  }
-  return statusMap[status] || status || '주문 대기'
-}
-
 onMounted(() => {
   loadGroupPurchases()
 })
@@ -593,6 +502,17 @@ onMounted(() => {
 // 쿼리 파라미터가 변경될 때 데이터 재로드
 watch(() => route.query.sellerId, () => {
   loadGroupPurchases()
+})
+
+watch([searchKeyword, categoryFilter, statusFilter], () => {
+  page.value = 0
+})
+
+watch(filteredGroupPurchases, () => {
+  const maxPage = Math.max(0, totalPages.value - 1)
+  if (page.value > maxPage) {
+    page.value = maxPage
+  }
 })
 </script>
 
@@ -625,691 +545,189 @@ watch(() => route.query.sellerId, () => {
 }
 
 .page-header p {
-  color: #999;
+  color: #a0a0a0;
   font-size: 15px;
 }
 
-.filters {
-  margin-bottom: 32px;
-}
-
-.filter-row {
+.filters-bar {
   display: flex;
-  gap: 16px;
-  align-items: center;
   flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  margin-bottom: 24px;
 }
 
-.search {
+.filter-group {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   flex: 1;
-  min-width: 300px;
+  min-width: 180px;
 }
 
-.search input {
-  flex: 1;
-  padding: 12px 16px;
-  background: #0f0f0f;
-  border: 2px solid #2a2a2a;
-  border-radius: 12px;
-  font-size: 15px;
-  color: #ffffff;
-}
-
-.search input:focus {
-  outline: none;
-  border-color: #ffffff;
-}
-
-.filter-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.sort-filter,
-.status-filter,
-.category-filter {
-  padding: 12px 16px;
-  background: #0f0f0f;
-  border: 2px solid #2a2a2a;
-  border-radius: 12px;
+.filter-group label {
+  color: #a0a0a0;
   font-size: 14px;
-  color: #ffffff;
-  cursor: pointer;
 }
 
-.sort-filter:focus,
-.status-filter:focus,
-.category-filter:focus {
-  outline: none;
-  border-color: #ffffff;
+.filter-group select,
+.search-control input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #2a2a2a;
+  background: #111111;
+  color: #ffffff;
+}
+
+.search-control {
+  display: flex;
+  gap: 10px;
+}
+
+.search-control .btn {
+  flex: 0 0 auto;
+  min-width: 110px;
+}
+
+.btn-text {
+  background: transparent;
+  border: none;
+  color: #9dbbff;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: center;
+}
+
+.btn-text:hover {
+  text-decoration: underline;
+}
+
+.loading-state,
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: #a0a0a0;
 }
 
 .empty-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: #a0a0a0;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
 }
 
-.empty-state p {
-  margin-bottom: 20px;
-  font-size: 18px;
+.gp-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
 }
 
-.group-purchase-list-container {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid #2a2a2a;
-  border-radius: 12px;
-  overflow: hidden;
+.product-grid-section {
+  padding: 20px 0 60px;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.product-card {
   background: #1a1a1a;
-}
-
-.gp-list-header {
-  display: grid;
-  grid-template-columns: 0.8fr 2.5fr 1.2fr 1.5fr 1.2fr 1fr;
-  gap: 16px;
-  padding: 14px 20px;
-  background: #0f0f0f;
-  border-bottom: 2px solid #2a2a2a;
-  font-size: 13px;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.group-purchase-item {
-  border-bottom: 1px solid #2a2a2a;
-  transition: background 0.2s;
-}
-
-.group-purchase-item:last-child {
-  border-bottom: none;
-}
-
-.group-purchase-item:hover {
-  background: #222222;
-}
-
-.group-purchase-item.expanded {
-  background: #1f1f1f;
-}
-
-.gp-list-row {
-  display: grid;
-  grid-template-columns: 0.8fr 2.5fr 1.2fr 1.5fr 1.2fr 1fr;
-  gap: 16px;
-  padding: 16px 20px;
+  border: 1px solid #2a2a2a;
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
   cursor: pointer;
-  align-items: center;
+  transition: all 0.3s;
 }
 
-.gp-col {
-  display: flex;
-  align-items: center;
-  font-size: 13px;
-  color: #e0e0e0;
+.product-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  border-color: #3a3a3a;
 }
 
-.gp-col-status {
-  justify-content: flex-start;
-}
-
-.status-badge {
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.status-badge.scheduled {
-  background: #f59f00;
-  color: #fff3bf;
-}
-
-.status-badge.open {
-  background: #51cf66;
-  color: #d3f9d8;
-}
-
-.status-badge.success {
-  background: #339af0;
-  color: #d0ebff;
-}
-
-.status-badge.failed {
-  background: #fa5252;
-  color: #ffe3e3;
-}
-
-.gp-col-title {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-}
-
-.title-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.title {
-  font-size: 15px;
-  font-weight: 700;
-  color: #ffffff;
-  margin: 0;
-  line-height: 1.4;
-}
-
-.category {
-  font-size: 11px;
-  color: #999;
-  font-weight: 600;
-}
-
-.gp-col-product {
-  color: #ffffff;
-}
-
-.product-name {
-  font-size: 13px;
-  margin: 0;
-}
-
-.gp-col-seller {
-  color: #999;
-}
-
-.seller-name {
-  font-size: 13px;
-}
-
-.gp-col-price {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-}
-
-.price-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.discount-price {
-  font-size: 15px;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.original-price {
-  font-size: 11px;
-  color: #666;
-  text-decoration: line-through;
-}
-
-.gp-col-progress {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.progress-wrapper {
+.image-wrapper {
+  position: relative;
+  padding-top: 70%;
   width: 100%;
 }
 
-.progress-info {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 4px;
-  font-size: 11px;
-}
-
-.progress-text {
-  color: #999;
-}
-
-.progress-percent {
-  color: #ffffff;
-  font-weight: 600;
-}
-
-.progress-bar {
-  height: 6px;
-  background: #0f0f0f;
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.progress-fill {
+.image-wrapper img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
   height: 100%;
-  background: #ffffff;
-  border-radius: inherit;
-  transition: width 0.3s;
+  object-fit: cover;
 }
 
-.gp-col-time {
-  color: #999;
-  font-size: 12px;
-}
-
-.time-text {
-  font-size: 12px;
-}
-
-.gp-col-action {
-  justify-content: center;
-}
-
-.expand-btn {
-  background: transparent;
-  border: 1px solid #3a3a3a;
-  border-radius: 6px;
-  padding: 6px 10px;
-  color: #ffffff;
-  cursor: pointer;
-  font-size: 12px;
-  transition: all 0.2s;
-}
-
-.expand-btn:hover {
-  background: #2a2a2a;
-  border-color: #4a4a4a;
-}
-
-.no-action {
-  color: #666;
-  font-size: 12px;
-}
-
-@media (max-width: 1024px) {
-  .gp-list-header,
-  .gp-list-row {
-    grid-template-columns: 0.8fr 2fr 1.2fr 1.2fr 1fr;
-  }
-
-  .gp-col-time {
-    display: none;
-  }
-}
-@media (max-width: 768px) {
-  .gp-list-header,
-  .gp-list-row {
-    grid-template-columns: 1fr 2fr 1fr 1fr;
-  }
-
-  .gp-col-progress {
-    display: none;
-  }
-}
-
-.order-dropdown {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 2px solid #2a2a2a;
-  animation: slideDown 0.3s ease-out;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    max-height: 0;
-  }
-  to {
-    opacity: 1;
-    max-height: 1000px;
-  }
-}
-
-.order-header-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.order-header-section h4 {
-  font-size: 18px;
-  font-weight: 700;
-  color: #ffffff;
-  margin: 0;
-}
-
-.order-count {
-  font-size: 14px;
-  color: #999;
-}
-
-.action-buttons {
+.badge-group {
+  position: absolute;
+  top: 12px;
+  left: 12px;
   display: flex;
   gap: 6px;
-  align-items: center;
 }
 
-.btn-danger-outline {
-  background: transparent;
-  border: 1px solid #ff4757;
-  color: #ff4757;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
+.card-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.btn-danger-outline:hover {
-  background: #ff4757;
-  color: white;
-}
-
-.btn-outline {
-  background: transparent;
-  border: 1px solid #3a3a3a;
-  color: #ffffff;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-outline:hover {
-  background: #2a2a2a;
-  border-color: #4a4a4a;
-}
-
-.btn-sm {
-  padding: 6px 12px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.btn-primary {
-  background: #ffffff;
-  color: #0a0a0a;
-}
-
-.btn-primary:hover {
-  background: #f0f0f0;
-  color: #0a0a0a;
-}
-
-.no-orders {
-  text-align: center;
-  padding: 40px 20px;
-  color: #666;
-}
-
-.no-orders p {
+.card-body h2 {
   margin: 0;
-  font-size: 14px;
-}
-
-.order-list {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid #2a2a2a;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.order-list-header {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr 1.2fr 1.5fr 0.8fr 1fr 1fr;
-  gap: 12px;
-  padding: 12px 16px;
-  background: #0f0f0f;
-  border-bottom: 2px solid #2a2a2a;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 20px;
   color: #ffffff;
 }
 
-.order-item-row {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr 1.2fr 1.5fr 0.8fr 1fr 1fr;
-  gap: 12px;
-  padding: 14px 16px;
-  border-bottom: 1px solid #2a2a2a;
-  background: #1a1a1a;
-  transition: background 0.2s;
-  align-items: center;
-}
-
-.order-item-row:hover {
-  background: #222222;
-}
-
-.order-item-row:last-child {
-  border-bottom: none;
-}
-
-.order-col {
-  display: flex;
-  align-items: center;
-  font-size: 13px;
-  color: #e0e0e0;
-  word-break: break-word;
-}
-
-.order-col-number {
-  font-weight: 600;
-  color: #ffffff;
-}
-
-.order-number-text {
-  font-family: monospace;
-  font-size: 12px;
-}
-
-.order-col-date {
+.card-body .subtitle {
   color: #999;
-}
-
-.order-date-text {
-  font-size: 12px;
-}
-
-.order-col-customer {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-}
-
-.customer-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.customer-name {
-  color: #ffffff;
-  font-weight: 500;
-}
-
-.customer-email {
-  font-size: 11px;
-  color: #999;
-}
-
-.order-col-product {
-  color: #ffffff;
-}
-
-.product-name-text {
-  font-size: 13px;
-}
-
-.order-col-quantity {
-  color: #e0e0e0;
-}
-
-.quantity-text {
-  font-size: 13px;
-}
-
-.order-col-amount {
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.amount-text {
   font-size: 14px;
-}
-
-.order-col-status {
-  justify-content: flex-start;
-}
-
-.order-status {
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.order-status.pending {
-  background: #f59f00;
-  color: #fff3bf;
-}
-
-.order-status.completed {
-  background: #51cf66;
-  color: #d3f9d8;
-}
-
-.order-status.shipping {
-  background: #339af0;
-  color: #d0ebff;
-}
-
-.order-status.delivered {
-  background: #51cf66;
-  color: #d3f9d8;
-}
-
-.order-status.cancelled {
-  background: #fa5252;
-  color: #ffe3e3;
-}
-
-@media (max-width: 1200px) {
-  .order-list-header,
-  .order-item-row {
-    grid-template-columns: 1fr 1fr 1fr 1fr;
-    gap: 8px;
-  }
-  
-  .order-col-number {
-    grid-column: 1;
-  }
-  
-  .order-col-date {
-    grid-column: 2;
-  }
-  
-  .order-col-customer {
-    grid-column: 3;
-  }
-  
-  .order-col-status {
-    grid-column: 4;
-  }
-  
-  .order-col-product,
-  .order-col-quantity,
-  .order-col-amount {
-    display: none;
-  }
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.status-badge {
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.status-badge.scheduled {
-  background: #f59f00;
-  color: #fff3bf;
-}
-
-.status-badge.open {
-  background: #51cf66;
-  color: #d3f9d8;
-}
-
-.status-badge.success {
-  background: #339af0;
-  color: #d0ebff;
-}
-
-.status-badge.failed {
-  background: #fa5252;
-  color: #ffe3e3;
 }
 
 .category {
-  font-size: 12px;
-  color: #999;
+  color: #ffffff;
   font-weight: 600;
+  font-size: 13px;
 }
 
-.title {
-  font-size: 20px;
+.price-row {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.current-price {
+  font-size: 22px;
   font-weight: 700;
   color: #ffffff;
-  margin: 0 0 8px 0;
 }
 
-.product-name {
-  font-size: 14px;
-  color: #a0a0a0;
-  margin: 0 0 12px 0;
-}
-
-.seller-info {
+.meta {
   font-size: 13px;
   color: #999;
-  margin-bottom: 12px;
 }
 
-.price-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.discount-price {
-  font-size: 24px;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.original-price {
-  font-size: 14px;
-  color: #666;
+.original {
   text-decoration: line-through;
+  color: #666;
 }
 
-.quantity-info {
+.progress-head {
   display: flex;
   justify-content: space-between;
   font-size: 13px;
-  color: #e0e0e0;
-  margin-bottom: 8px;
+  color: #ffffff;
+}
+
+.progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .progress-bar {
@@ -1317,41 +735,204 @@ watch(() => route.query.sellerId, () => {
   background: #0f0f0f;
   border-radius: 999px;
   overflow: hidden;
-  margin-bottom: 12px;
 }
 
 .progress-fill {
   height: 100%;
   background: #ffffff;
-  border-radius: inherit;
-  transition: width 0.3s;
 }
 
-.time-info {
+.card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.time {
   font-size: 13px;
   color: #999;
-  text-align: right;
 }
 
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 12px;
-  font-size: 14px;
+.footer-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.gp-card {
+  background: #111111;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.gp-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-badge {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
+  text-transform: uppercase;
 }
 
-.btn-outline {
-  background: transparent;
-  border: 1px solid #3a3a3a;
+.status-badge.open {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.status-badge.scheduled {
+  background: rgba(250, 204, 21, 0.15);
+  color: #facc15;
+  border: 1px solid rgba(250, 204, 21, 0.3);
+}
+
+.status-badge.success {
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(96, 165, 250, 0.3);
+}
+
+.status-badge.failed {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.time-remaining {
+  font-size: 13px;
+  color: #bbbbbb;
+}
+
+.gp-card-body {
+  display: flex;
+  gap: 16px;
+  min-width: 0;
+}
+
+.gp-image {
+  width: 140px;
+  height: 140px;
+  border-radius: 16px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #0f0f0f;
+}
+
+.gp-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gp-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.gp-category {
+  font-size: 13px;
+  color: #a0a0a0;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gp-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.gp-seller {
+  margin: 0;
+  color: #c7c7c7;
+  font-size: 14px;
+}
+
+.gp-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.gp-price-row .price {
+  font-size: 22px;
+  font-weight: 700;
   color: #ffffff;
 }
 
-.btn-outline:hover {
-  background: #2a2a2a;
-  border-color: #4a4a4a;
+.gp-price-row .original-price {
+  font-size: 14px;
+  color: #777;
+  text-decoration: line-through;
+}
+
+.gp-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #bdbdbd;
+}
+
+.progress-bar {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #ffffff, #cccccc);
+  border-radius: inherit;
+  transition: width 0.3s ease;
+}
+
+.gp-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  color: #a0a0a0;
+  flex-wrap: wrap;
+}
+
+.gp-card-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #ffffff;
 }
 
 .btn-primary {
@@ -1359,24 +940,88 @@ watch(() => route.query.sellerId, () => {
   color: #0a0a0a;
 }
 
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.2);
-  background: #f0f0f0;
+.btn-outline {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.btn-danger {
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.btn-danger:hover {
+  background: #ff6b6b;
+  color: #0a0a0a;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination {
+  margin-top: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+}
+
+.page-btn {
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid #2a2a2a;
+  background: #1a1a1a;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: #ffffff;
+  color: #0a0a0a;
+  border-color: #ffffff;
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-info {
+  min-width: 80px;
+  text-align: center;
+  font-weight: 600;
+  color: #ffffff;
 }
 
 @media (max-width: 768px) {
-  .group-purchase-grid {
-    grid-template-columns: 1fr;
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
-  .filter-row {
+  .filters-bar {
     flex-direction: column;
   }
 
-  .search {
+  .gp-card-body {
+    flex-direction: column;
+  }
+
+  .gp-image {
     width: 100%;
+    height: 200px;
+  }
+
+  .gp-meta {
+    flex-direction: column;
+    gap: 6px;
   }
 }
 </style>
-
