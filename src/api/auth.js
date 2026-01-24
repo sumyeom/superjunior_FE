@@ -83,6 +83,15 @@ export const authAPI = {
         })
         return response.data;
     },
+    updateSeller: async(sellerData) => {
+        const response = await api.put(`/members/seller`, {
+            accountNumber: sellerData.accountNumber,
+            bankCode: sellerData.bankCode,
+            accountHolder: sellerData.accountHolder,
+            businessRegistrationNumber: sellerData.businessRegistrationNumber
+        })
+        return response.data;
+    },
     // 주문 내역 조회
     getOrders: async ({
       page = 0,

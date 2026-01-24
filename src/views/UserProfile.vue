@@ -558,24 +558,97 @@
                 <div class="card-header">
                   <div>
                     <p class="card-subtitle">은행</p>
-                    <h3>{{ sellerAccountInfo.bank }}</h3>
+                    <h3>{{ sellerAccountInfo.bank || '은행 미지정' }}</h3>
                   </div>
-                  <button class="link-button" @click="goToSellerProfile">
-                    정보 수정
-                  </button>
+                  <div class="edit-actions">
+                    <button
+                      v-if="!isEditingSellerInfo"
+                      class="link-button"
+                      @click="startEditSellerInfo"
+                    >
+                      정보 수정
+                    </button>
+                    <button
+                      v-else
+                      class="link-button"
+                      @click="cancelEditSellerInfo"
+                    >
+                      수정 취소
+                    </button>
+                  </div>
                 </div>
-                <dl class="info-list">
+                <div v-if="isEditingSellerInfo" class="seller-edit-form">
+                  <form @submit.prevent="saveSellerInfo">
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label>은행</label>
+                        <select v-model="sellerInfoForm.bankCode" required>
+                          <option value="">은행을 선택하세요</option>
+                          <option
+                            v-for="bank in bankList"
+                            :key="bank.code"
+                            :value="bank.code"
+                          >
+                            {{ bank.name }}
+                          </option>
+                        </select>
+                        <p v-if="sellerInfoErrors.bankCode" class="form-error">{{ sellerInfoErrors.bankCode }}</p>
+                      </div>
+                      <div class="form-group">
+                        <label>계좌번호</label>
+                        <input
+                          v-model="sellerInfoForm.accountNumber"
+                          type="text"
+                          placeholder="계좌번호를 입력하세요"
+                          required
+                        />
+                        <p v-if="sellerInfoErrors.accountNumber" class="form-error">{{ sellerInfoErrors.accountNumber }}</p>
+                      </div>
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label>예금주</label>
+                        <input
+                          v-model="sellerInfoForm.accountHolder"
+                          type="text"
+                          placeholder="예금주명을 입력하세요"
+                          required
+                        />
+                        <p v-if="sellerInfoErrors.accountHolder" class="form-error">{{ sellerInfoErrors.accountHolder }}</p>
+                      </div>
+                      <div class="form-group">
+                        <label>사업자 등록번호</label>
+                        <input
+                          v-model="sellerInfoForm.businessRegistrationNumber"
+                          type="text"
+                          placeholder="000-00-00000"
+                          required
+                        />
+                        <p v-if="sellerInfoErrors.businessRegistrationNumber" class="form-error">{{ sellerInfoErrors.businessRegistrationNumber }}</p>
+                      </div>
+                    </div>
+                    <div class="seller-edit-actions">
+                      <button type="button" class="btn btn-outline btn-sm" @click="cancelEditSellerInfo">
+                        취소
+                      </button>
+                      <button type="submit" class="btn btn-primary btn-sm" :disabled="savingSellerInfo">
+                        {{ savingSellerInfo ? '저장 중...' : '저장하기' }}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+                <dl v-else class="info-list">
                   <div class="info-row">
                     <dt>계좌번호</dt>
-                    <dd>{{ sellerAccountInfo.accountNumber }}</dd>
+                    <dd>{{ sellerAccountInfo.accountNumber || '-' }}</dd>
                   </div>
                   <div class="info-row">
                     <dt>예금주</dt>
-                    <dd>{{ sellerAccountInfo.owner }}</dd>
+                    <dd>{{ sellerAccountInfo.owner || '-' }}</dd>
                   </div>
                   <div class="info-row">
                     <dt>사업자 등록번호</dt>
-                    <dd>{{ sellerAccountInfo.businessNumber }}</dd>
+                    <dd>{{ sellerAccountInfo.businessNumber || '-' }}</dd>
                   </div>
                   <div class="info-row">
                     <dt>전화번호</dt>
@@ -583,7 +656,7 @@
                   </div>
                   <div class="info-row">
                     <dt>이메일</dt>
-                    <dd>{{ sellerAccountInfo.email }}</dd>
+                    <dd>{{ sellerAccountInfo.email || '-' }}</dd>
                   </div>
                 </dl>
               </div>
@@ -1105,12 +1178,13 @@ const activeMenu = ref('profile')
 
 // 판매자 센터 데이터
 const sellerAccountInfo = ref({
-  bank: 'IBK기업은행',
-  accountNumber: '111111',
-  owner: '김희영',
-  businessNumber: '111-11-11111',
-  phone: '-',
-  email: 'huiyeong9619@naver.com'
+  bank: '',
+  bankCode: '',
+  accountNumber: '',
+  owner: '',
+  businessNumber: '',
+  phone: '',
+  email: ''
 })
 
 const sellerProductsAll = ref([])
@@ -1119,6 +1193,20 @@ const sellerProductsLoading = ref(false)
 const sellerGroupPurchasesLoading = ref(false)
 const sellerProductsLoaded = ref(false)
 const sellerGroupPurchasesLoaded = ref(false)
+const isEditingSellerInfo = ref(false)
+const savingSellerInfo = ref(false)
+const sellerInfoErrors = ref({
+  bankCode: '',
+  accountNumber: '',
+  accountHolder: '',
+  businessRegistrationNumber: ''
+})
+const sellerInfoForm = ref({
+  bankCode: '',
+  accountNumber: '',
+  accountHolder: '',
+  businessRegistrationNumber: ''
+})
 
 const formatCount = (value) => Number(value || 0).toLocaleString()
 
@@ -1171,6 +1259,32 @@ const sellerNotices = ref([
   }
 ])
 
+const bankList = [
+  { code: '002', name: 'KDB산업은행' },
+  { code: '003', name: 'IBK기업은행' },
+  { code: '004', name: 'KB국민은행' },
+  { code: '005', name: 'KEB하나은행' },
+  { code: '007', name: '수협은행' },
+  { code: '011', name: 'NH농협은행' },
+  { code: '020', name: '우리은행' },
+  { code: '023', name: 'SC은행' },
+  { code: '027', name: '씨티은행' },
+  { code: '031', name: '대구은행' },
+  { code: '032', name: '부산은행' },
+  { code: '034', name: '광주은행' },
+  { code: '035', name: '제주은행' },
+  { code: '037', name: '전북은행' },
+  { code: '039', name: '경남은행' },
+  { code: '045', name: 'MG새마을금고' },
+  { code: '048', name: '신협' },
+  { code: '050', name: '저축은행' },
+  { code: '071', name: '우체국' },
+  { code: '088', name: '신한은행' },
+  { code: '089', name: '케이뱅크' },
+  { code: '090', name: '카카오뱅크' },
+  { code: '092', name: '토스뱅크' }
+]
+
 const sellerProductCategoryMap = {
   HOME: '생활 & 주방',
   FOOD: '식품 & 간식',
@@ -1184,6 +1298,32 @@ const sellerProductCategoryMap = {
 }
 
 const sellerGroupCategoryMap = sellerProductCategoryMap
+
+const loadSellerAccountInfo = async () => {
+  try {
+    const memberId = localStorage.getItem('member_id')
+    if (!memberId) return
+    const response = await authAPI.getSellerInfo(memberId)
+    const raw = response?.data || response
+    sellerAccountInfo.value = {
+      bank: bankList.find(bank => bank.code === raw.bankCode)?.name || raw.bankName || raw.bank || '은행 미지정',
+      bankCode: raw.bankCode || '',
+      accountNumber: raw.accountNumber || '-',
+      owner: raw.accountHolder || raw.owner || raw.name || '-',
+      businessNumber: raw.businessRegistrationNumber || raw.businessNumber || '-',
+      phone: raw.phoneNumber || raw.phone || '-',
+      email: raw.email || raw.contactEmail || localStorage.getItem('user_email') || '-'
+    }
+    sellerInfoForm.value = {
+      bankCode: raw.bankCode || '',
+      accountNumber: raw.accountNumber || '',
+      accountHolder: raw.accountHolder || raw.owner || raw.name || '',
+      businessRegistrationNumber: raw.businessRegistrationNumber || raw.businessNumber || ''
+    }
+  } catch (error) {
+    console.error('판매자 정보 로드 실패:', error)
+  }
+}
 
 const loadSellerProductsSummary = async () => {
   if (sellerProductsLoading.value) return
@@ -1244,8 +1384,84 @@ const loadSellerGroupPurchasesSummary = async () => {
   }
 }
 
+const clearSellerInfoErrors = () => {
+  sellerInfoErrors.value = {
+    bankCode: '',
+    accountNumber: '',
+    accountHolder: '',
+    businessRegistrationNumber: ''
+  }
+}
+
+const resetSellerInfoForm = () => {
+  sellerInfoForm.value = {
+    bankCode: sellerAccountInfo.value.bankCode || '',
+    accountNumber: sellerAccountInfo.value.accountNumber && sellerAccountInfo.value.accountNumber !== '-' ? sellerAccountInfo.value.accountNumber : '',
+    accountHolder: sellerAccountInfo.value.owner && sellerAccountInfo.value.owner !== '-' ? sellerAccountInfo.value.owner : '',
+    businessRegistrationNumber: sellerAccountInfo.value.businessNumber && sellerAccountInfo.value.businessNumber !== '-' ? sellerAccountInfo.value.businessNumber : ''
+  }
+  clearSellerInfoErrors()
+}
+
+const startEditSellerInfo = () => {
+  resetSellerInfoForm()
+  isEditingSellerInfo.value = true
+}
+
+const cancelEditSellerInfo = () => {
+  resetSellerInfoForm()
+  isEditingSellerInfo.value = false
+}
+
+const validateSellerInfo = () => {
+  clearSellerInfoErrors()
+  let valid = true
+  if (!sellerInfoForm.value.bankCode) {
+    sellerInfoErrors.value.bankCode = '은행을 선택하세요.'
+    valid = false
+  }
+  if (!sellerInfoForm.value.accountNumber) {
+    sellerInfoErrors.value.accountNumber = '계좌번호를 입력하세요.'
+    valid = false
+  } else if (!/^[0-9-]+$/.test(sellerInfoForm.value.accountNumber)) {
+    sellerInfoErrors.value.accountNumber = '계좌번호는 숫자와 하이픈만 입력 가능합니다.'
+    valid = false
+  }
+  if (!sellerInfoForm.value.accountHolder) {
+    sellerInfoErrors.value.accountHolder = '예금주명을 입력하세요.'
+    valid = false
+  }
+  if (!sellerInfoForm.value.businessRegistrationNumber) {
+    sellerInfoErrors.value.businessRegistrationNumber = '사업자 등록번호를 입력하세요.'
+    valid = false
+  }
+  return valid
+}
+
+const saveSellerInfo = async () => {
+  if (!validateSellerInfo()) return
+  savingSellerInfo.value = true
+  try {
+    await authAPI.updateSeller({
+      bankCode: sellerInfoForm.value.bankCode,
+      accountNumber: sellerInfoForm.value.accountNumber,
+      accountHolder: sellerInfoForm.value.accountHolder,
+      businessRegistrationNumber: sellerInfoForm.value.businessRegistrationNumber
+    })
+    await loadSellerAccountInfo()
+    isEditingSellerInfo.value = false
+    alert('판매자 정보가 수정되었습니다.')
+  } catch (error) {
+    console.error('판매자 정보 수정 실패:', error)
+    alert(error.response?.data?.message || '판매자 정보 수정에 실패했습니다.')
+  } finally {
+    savingSellerInfo.value = false
+  }
+}
+
 const ensureSellerSalesData = async () => {
   if (!isSeller.value) return
+  await loadSellerAccountInfo()
   if (!sellerProductsLoaded.value) {
     await loadSellerProductsSummary()
   }
@@ -1467,10 +1683,6 @@ const loadCancelledOrders = async (page = 0) => {
 
 const openSellerMenu = (menu) => {
   activeMenu.value = menu
-}
-
-const goToSellerProfile = () => {
-  router.push('/seller/profile')
 }
 
 const goToSellerSettlement = () => {
@@ -2394,6 +2606,52 @@ const saveNotificationSettings = async () => {
   gap: 24px;
 }
 
+.seller-edit-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.seller-edit-form .form-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.seller-edit-form .form-group {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.seller-edit-form label {
+  font-size: 13px;
+  color: #c0c0c0;
+}
+
+.seller-edit-form input,
+.seller-edit-form select {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #2a2a2a;
+  background: #0f0f0f;
+  color: #ffffff;
+}
+
+.seller-edit-form .form-error {
+  color: #ff6b6b;
+  font-size: 12px;
+}
+
+.seller-edit-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
 .mini-loading {
   padding: 16px;
   background: rgba(255, 255, 255, 0.02);
@@ -2551,6 +2809,11 @@ const saveNotificationSettings = async () => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .card-header.align-start {
