@@ -43,6 +43,14 @@ export const authAPI = {
         const response = await api.get(`/members/profile`)
         return response.data;
     },
+    // 프로필 수정
+    updateProfile: async(name, phoneNumber) => {
+        const response = await api.put(`/members/profile`, {
+            name,
+            phoneNumber
+        })
+        return response.data;
+    },
     // 주소 목록 조회
     getAddresses: async(page = 0, size = 10) => {
         const response = await api.get(`/members/addresses`, {
@@ -95,6 +103,18 @@ export const authAPI = {
         const response = await api.get(`/orders/${orderId}`)
         return response.data;
     },
+    // 주문 취소
+    cancelOrder: async(orderId, cancelReason) => {
+        const response = await api.post(`/orders/cancel/${orderId}`, {
+            cancelReason: cancelReason
+        })
+        return response.data;
+    },
+    // 주문 확정
+    confirmPurchase: async(orderId) => {
+        const response = await api.patch(`/orders/${orderId}/purchase-confirmed`)
+        return response.data;
+    },
     // 판매자 정보 조회
     getSellerInfo: async(sellerId) => {
         const response = await api.get(`/members/seller/${sellerId}`)
@@ -106,9 +126,15 @@ export const authAPI = {
         return response.data;
     },
     // 판매자 주문 내역 조회
-    getSellerOrders: async() => {
-        const response = await api.get(`/orders/seller`)
-        return response.data;
+    getSellerOrders: async({
+      page = 0,
+      size = 20,
+      sort = 'createdAt,asc'
+    } = {}) => {
+      const response = await api.get('/orders/seller', {
+        params: { page, size, sort }
+      })
+      return response.data.data
     },
     // 공동 구매 목록 조회
     getGroupPurchases: async() => {
