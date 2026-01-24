@@ -34,6 +34,7 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { notificationApi, cartApi } from '@/api/axios'
+import { authAPI } from '@/api/auth'
 
 const router = useRouter()
 
@@ -45,16 +46,42 @@ let notificationCheckInterval = null
 let cartCountInterval = null
 
 const checkAuthStatus = async () => {
-  const token = localStorage.getItem('access_token')
+  const memberId = localStorage.getItem('member_id')
   const wasLoggedIn = isLoggedIn.value
-  isLoggedIn.value = !!token
-  if (!token) {
+  isLoggedIn.value = !!memberId
+  if (!memberId) {
     cartCount.value = 0
     notificationCount.value = 0
   } else if (!wasLoggedIn) {
     // 로그인 상태로 변경된 경우 장바구니와 알림 개수 로드
     await loadCartCount()
     loadNotificationCount()
+  }
+}
+
+const verifySession = async () => {
+  try {
+    const profile = await authAPI.getProfile()
+    const rawData = profile?.data || profile
+    const profileData = rawData?.data || rawData
+    if (profileData?.memberId) {
+      localStorage.setItem('member_id', profileData.memberId)
+      localStorage.setItem('user_data', JSON.stringify(profileData))
+      if (profileData.email) localStorage.setItem('user_email', profileData.email)
+      if (profileData.role) localStorage.setItem('user_role', profileData.role)
+      if (profileData.name) localStorage.setItem('user_name', profileData.name)
+      isLoggedIn.value = true
+    } else {
+      throw new Error('로그인 정보가 없습니다.')
+    }
+  } catch (error) {
+    localStorage.removeItem('member_id')
+    localStorage.removeItem('user_email')
+    localStorage.removeItem('user_role')
+    localStorage.removeItem('user_name')
+    localStorage.removeItem('user_data')
+    localStorage.removeItem('user_profile')
+    isLoggedIn.value = false
   }
 }
 
@@ -77,8 +104,8 @@ const loadNotificationCount = async () => {
 }
 
 const loadCartCount = async () => {
-  const token = localStorage.getItem('access_token')
-  if (!token) {
+  const memberId = localStorage.getItem('member_id')
+  if (!memberId) {
     cartCount.value = 0
     return
   }
@@ -113,7 +140,7 @@ const goToMyPage = () => {
 }
 
 const handleStorageChange = async (e) => {
-  if (e.key === 'access_token') {
+  if (e.key === 'member_id') {
     await checkAuthStatus()
     loadNotificationCount()
   }
@@ -121,6 +148,9 @@ const handleStorageChange = async (e) => {
 
 const handleAuthChanged = async () => {
   await checkAuthStatus()
+  if (!isLoggedIn.value) {
+    await verifySession()
+  }
   loadNotificationCount()
 }
 
@@ -141,14 +171,19 @@ const handleFocus = () => {
   }
 }
 
-const handleLogout = () => {
+const handleLogout = async () => {
   if (confirm('로그아웃 하시겠습니까?')) {
-    localStorage.removeItem('access_token')
+    try {
+      await authAPI.logout()
+    } catch (error) {
+      console.warn('로그아웃 요청 실패:', error)
+    }
     localStorage.removeItem('user_role')
     localStorage.removeItem('user_email')
     localStorage.removeItem('user_data')
     localStorage.removeItem('user_profile')
     localStorage.removeItem('member_id')
+    localStorage.removeItem('user_name')
     isLoggedIn.value = false
     cartCount.value = 0
     notificationCount.value = 0
@@ -158,6 +193,9 @@ const handleLogout = () => {
 
 onMounted(() => {
   checkAuthStatus()
+  if (!isLoggedIn.value) {
+    verifySession()
+  }
   loadCartCount()
   loadNotificationCount()
   
@@ -175,9 +213,9 @@ onMounted(() => {
   window.addEventListener('cart-updated', handleCartUpdated)
   
   // 같은 탭에서의 변경 감지를 위한 주기적 체크
- authCheckInterval = setInterval(() => {
-    const token = localStorage.getItem('access_token')
-    if (!!token !== isLoggedIn.value) {
+  authCheckInterval = setInterval(() => {
+    const memberId = localStorage.getItem('member_id')
+    if (!!memberId !== isLoggedIn.value) {
       checkAuthStatus()
     }
   }, 1000)

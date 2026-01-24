@@ -112,16 +112,6 @@ const handleLogin = async () => {
       console.log('쿠키 확인 오류:', e)
     }
     
-    // Cookie 기반 인증이지만 SiteHeader가 localStorage의 access_token을 체크하므로 저장
-    // 백엔드가 Cookie에 토큰을 설정하지만, 프론트엔드에서도 로그인 상태를 추적하기 위해 저장
-    if (response.data.accessToken || response.data.token) {
-      localStorage.setItem('access_token', response.data.accessToken || response.data.token)
-    } else {
-      // 백엔드가 Cookie만 사용하는 경우, 로그인 성공 표시를 위해 더미 토큰 저장
-      // 실제 인증은 Cookie로 처리되지만, SiteHeader가 로그인 상태를 인식하도록 함
-      localStorage.setItem('access_token', 'authenticated')
-    }
-    
     // 사용자 정보 저장 (로그인 응답에 없을 수 있어 프로필 API로 보강)
     if (response.data.email) {
       localStorage.setItem('user_email', response.data.email)
@@ -135,7 +125,8 @@ const handleLogin = async () => {
 
     try {
       const profile = await authAPI.getProfile()
-      const profileData = profile?.data || profile
+      const rawData = profile?.data || profile
+      const profileData = rawData?.data || rawData
       if (profileData?.memberId) {
         localStorage.setItem('member_id', profileData.memberId)
       }

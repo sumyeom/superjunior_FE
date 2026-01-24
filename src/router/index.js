@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { authAPI } from '@/api/auth'
 
 import HomePage from '../views/HomePage.vue'
 import CommunityList from '../views/CommunityList.vue'
@@ -78,16 +79,35 @@ const router = createRouter({
   routes
 })
 
-// 인증 가드: meta.requiresAuth가 true인 라우트는 토큰 필요
-router.beforeEach((to, from, next) => {
+// 인증 가드: meta.requiresAuth가 true인 라우트는 프로필 확인
+router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth) {
-    const token = localStorage.getItem('access_token')
-    if (!token) {
-      // 로그인 페이지로 리다이렉트하고, 원래 가려던 페이지를 query로 저장
-      return next({
-        path: '/login',
-        query: { redirect: to.fullPath }
-      })
+    let memberId = localStorage.getItem('member_id')
+    if (!memberId) {
+      try {
+        const profile = await authAPI.getProfile()
+        const rawData = profile?.data || profile
+        const profileData = rawData?.data || rawData
+        if (!profileData?.memberId) {
+          throw new Error('로그인 정보가 없습니다.')
+        }
+        memberId = profileData.memberId
+        localStorage.setItem('member_id', memberId)
+        localStorage.setItem('user_data', JSON.stringify(profileData))
+        if (profileData.email) localStorage.setItem('user_email', profileData.email)
+        if (profileData.role) localStorage.setItem('user_role', profileData.role)
+        if (profileData.name) localStorage.setItem('user_name', profileData.name)
+      } catch (error) {
+        localStorage.removeItem('member_id')
+        localStorage.removeItem('user_email')
+        localStorage.removeItem('user_role')
+        localStorage.removeItem('user_name')
+        localStorage.removeItem('user_data')
+        return next({
+          path: '/login',
+          query: { redirect: to.fullPath }
+        })
+      }
     }
   }
   next()

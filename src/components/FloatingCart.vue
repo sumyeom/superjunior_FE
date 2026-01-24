@@ -82,8 +82,8 @@ const totalPrice = computed(() => {
 })
 
 const loadCartItems = async () => {
-  const token = localStorage.getItem('access_token')
-  if (!token) {
+  const memberId = localStorage.getItem('member_id')
+  if (!memberId) {
     items.value = []
     return
   }
