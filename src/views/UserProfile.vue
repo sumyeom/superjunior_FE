@@ -4301,6 +4301,10 @@ const saveNotificationSettings = async () => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
+.panel + .panel {
+  margin-top: 40px;
+}
+
 .panel h3 {
   font-size: 20px;
   font-weight: 700;
