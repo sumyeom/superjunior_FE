@@ -794,7 +794,7 @@
               </div>
               <div class="hero-actions">
                 <button class="btn btn-primary" @click="goToProductRegister">+ 상품 등록</button>
-                <button class="btn btn-outline" @click="goToGroupPurchaseManage">+ 내 공동구매 등록</button>
+                <button class="btn btn-primary" @click="goToGroupPurchaseManage">+ 공동구매 등록</button>
               </div>
             </div>
 
