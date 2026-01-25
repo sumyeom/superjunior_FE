@@ -1052,6 +1052,7 @@
                         <p class="order-id">#{{ order.orderId }}</p>
                         <p class="order-date">{{ formatDateShort(order.createdAt) }}</p>
                         <p class="order-buyer">{{ order.buyerName }}</p>
+                        <p class="order-detail">{{ order.quantity }}개 × ₩{{ formatPrice(order.price) }}</p>
                       </div>
                       <div class="order-dropdown-right">
                         <span class="order-amount">₩{{ formatPrice(order.totalAmount) }}</span>
@@ -3464,6 +3465,13 @@ const saveNotificationSettings = async () => {
   margin: 0;
   color: #c0c0c0;
   font-size: 13px;
+}
+
+.order-detail {
+  margin: 0;
+  color: #999;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .card-header {
