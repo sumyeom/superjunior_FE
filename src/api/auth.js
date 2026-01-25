@@ -2,12 +2,12 @@ import api, { authApi } from './axios.js'
 export const authAPI = {
     // 이메일 인증 코드
     sendVerificationEmail: async(email) => {
-        const response = await api.post(`/email/${email}`)
+        const response = await api.post(`/members/email/${email}`)
         return response.data;
     },
     // 이메일 인증 (토큰 기반)
     verifyEmail: async(email, token) => {
-        const response = await api.post(`/email/verification`, {
+        const response = await api.post(`/members/email/verification`, {
             email,
             token
         })
