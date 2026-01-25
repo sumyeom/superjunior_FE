@@ -183,7 +183,7 @@
                 class="product-card"
                 @click="goToProduct(product.id)"
               >
-                <img :src="product.image" :alt="product.title" />
+                <img :src="product.imageUrl || product.image || product.images?.[0]" :alt="product.title" />
                 <div class="product-info">
                   <p class="category">{{ product.category }}</p>
                   <h3>{{ product.title }}</h3>
@@ -1172,7 +1172,7 @@ const transformGroupPurchase = (gp) => {
     '기타'
 
   // 이미지 우선순위
-  let image = product.imageUrl || product.image || product.thumbnailUrl
+  let image = gp.imageUrl || product.imageUrl || product.image || product.thumbnailUrl
     if (!image || image.trim() === '') {
       image = categoryImages[product.category]
     }

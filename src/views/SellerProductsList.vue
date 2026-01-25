@@ -68,7 +68,7 @@
         <div v-else class="products-grid">
           <div v-for="product in pagedProducts" :key="product.id" class="product-card">
             <div class="product-image-wrapper">
-              <img :src="product.image || product.images?.[0]" :alt="product.title" />
+              <img :src="product.imageUrl || product.image || product.images?.[0]" :alt="product.title" />
               <div class="product-badges">
                 <span v-if="product.currentCount >= product.targetCount" class="badge badge-success">목표 달성</span>
                 <span v-if="product.currentCount < product.targetCount * 0.3" class="badge badge-new">신규</span>
@@ -274,8 +274,13 @@ const deleteProduct = async (id) => {
     // UUID 형식인지 확인 (백엔드에서 UUID를 사용하므로)
     // id가 숫자면 UUID로 변환 필요할 수 있음
     const productId = typeof id === 'string' && id.includes('-') ? id : id.toString()
+    const targetProduct = filteredProducts.value.find(product => product.id === productId)
     
     await productApi.deleteProduct(productId)
+
+    if (targetProduct?.imageUrl) {
+      await productApi.deleteProductImage(targetProduct.imageUrl)
+    }
     
     alert('상품이 삭제되었습니다.')
     loadProducts()

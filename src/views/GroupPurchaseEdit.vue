@@ -21,13 +21,41 @@
             />
           </div>
           <div class="form-group">
+            <label for="purchaseImages">대표 사진</label>
+            <input
+              id="purchaseImages"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              @change="handleImageFilesChange"
+            />
+            <p class="form-hint">첫 번째 이미지가 대표 사진으로 사용됩니다 (jpg, png, webp / 최대 10MB)</p>
+            <p v-if="imageError" class="form-error">{{ imageError }}</p>
+          </div>
+          <div v-if="imagePreviews.length" class="image-preview-grid">
+            <div v-for="(preview, index) in imagePreviews" :key="preview + index" class="image-preview-item">
+              <img :src="preview" alt="공동구매 이미지 미리보기" />
+              <button type="button" class="btn btn-outline btn-sm" @click="removeImage(index)">
+                삭제
+              </button>
+            </div>
+          </div>
+          <p v-if="imageUploading" class="upload-status">이미지 업로드 중...</p>
+          <div class="form-group">
             <label for="description">설명</label>
-            <textarea
-              id="description"
-              v-model="form.description"
-              rows="5"
-              placeholder="공동구매에 대한 상세한 설명을 작성해주세요"
-            ></textarea>
+            <div class="tiptap-toolbar">
+              <button type="button" class="btn btn-outline btn-sm" @click="triggerDescriptionImage">
+                이미지 첨부
+              </button>
+              <input
+                ref="descriptionImageInput"
+                class="sr-only"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                @change="handleDescriptionImageChange"
+              />
+            </div>
+            <EditorContent :editor="editor" class="tiptap-editor" />
           </div>
         </div>
 
@@ -226,9 +254,13 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { groupPurchaseApi, productApi } from '@/api/axios'
+import api, { groupPurchaseApi, productApi } from '@/api/axios'
+import { useEditor, EditorContent } from '@tiptap/vue-3'
+import StarterKit from '@tiptap/starter-kit'
+import Image from '@tiptap/extension-image'
+import MarkdownIt from 'markdown-it'
 
 // eslint-disable-next-line no-undef
 const props = defineProps({
@@ -242,6 +274,10 @@ const router = useRouter()
 
 const groupPurchase = ref(null)
 const products = ref([])
+const imageUrls = ref([])
+const imagePreviews = ref([])
+const imageUploading = ref(false)
+const imageError = ref('')
 const form = ref({
   title: '',
   description: '',
@@ -259,6 +295,9 @@ const form = ref({
 
 const loading = ref(false)
 const loadingProducts = ref(false)
+const markdownParser = new MarkdownIt({ html: true })
+const descriptionImageInput = ref(null)
+const pendingImages = ref([])
 
 const isFormValid = computed(() => {
   return (
@@ -277,6 +316,88 @@ const isFormValid = computed(() => {
   )
 })
 
+const triggerDescriptionImage = () => {
+  descriptionImageInput.value?.click()
+}
+
+const uploadPurchaseImage = async (file) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  const response = await api.post('/purchases/images', formData)
+  const data = response?.data?.data || response?.data || {}
+  if (!data.imageUrl) {
+    throw new Error('이미지 업로드에 실패했습니다.')
+  }
+
+  return data.imageUrl
+}
+
+const deletePurchaseImage = async (imageUrl) => {
+  if (!imageUrl) return
+  try {
+    await api.delete('/purchases/images', { params: { imageUrl } })
+  } catch (error) {
+    console.error('이미지 삭제 실패:', error)
+  }
+}
+
+let editor = null
+const insertImage = (imageUrl) => {
+  if (!editor?.value) return
+  editor.value.chain().focus().setImage({ src: imageUrl }).run()
+}
+
+const queueDescriptionImage = (file) => {
+  const localUrl = URL.createObjectURL(file)
+  pendingImages.value.push({ file, localUrl })
+  insertImage(localUrl)
+}
+
+const handleDescriptionImageChange = async (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+  event.target.value = ''
+
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+  if (!allowedTypes.includes(file.type) || file.size > 10 * 1024 * 1024) {
+    alert('이미지는 jpg, png, webp 형식이며 10MB 이하만 가능합니다.')
+    return
+  }
+
+  queueDescriptionImage(file)
+}
+
+const handleDescriptionFiles = async (files = []) => {
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+  const imageFiles = files.filter(file => allowedTypes.includes(file.type) && file.size <= 10 * 1024 * 1024)
+  if (!imageFiles.length) return false
+  for (const file of imageFiles) {
+    queueDescriptionImage(file)
+  }
+  return true
+}
+
+editor = useEditor({
+  extensions: [StarterKit, Image],
+  content: '',
+  editorProps: {
+    handleDrop: (view, event) => {
+      const files = Array.from(event.dataTransfer?.files || [])
+      if (!files.length) return false
+      event.preventDefault()
+      handleDescriptionFiles(files)
+      return true
+    },
+    handlePaste: (view, event) => {
+      const files = Array.from(event.clipboardData?.files || [])
+      if (!files.length) return false
+      event.preventDefault()
+      handleDescriptionFiles(files)
+      return true
+    }
+  }
+})
+
 // 오늘 날짜 문자열 (YYYY-MM-DD)
 const getTodayDateStr = () => {
   const today = new Date()
@@ -292,6 +413,49 @@ const selectedProduct = computed(() => {
   if (!form.value.productId) return null
   return products.value.find(p => p.productId === form.value.productId)
 })
+
+const handleImageFilesChange = async (event) => {
+  const files = Array.from(event.target.files || [])
+  if (!files.length) return
+
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+  const invalidFile = files.find(
+    file => !allowedTypes.includes(file.type) || file.size > 10 * 1024 * 1024
+  )
+  if (invalidFile) {
+    imageError.value = '이미지는 jpg, png, webp 형식이며 10MB 이하만 가능합니다.'
+    event.target.value = ''
+    return
+  }
+
+  imageError.value = ''
+  imageUploading.value = true
+
+  try {
+    for (const file of files) {
+      const previewUrl = URL.createObjectURL(file)
+      imagePreviews.value.push(previewUrl)
+
+      const imageUrl = await uploadPurchaseImage(file)
+      imageUrls.value.push(imageUrl)
+    }
+  } catch (error) {
+    console.error('공동구매 이미지 업로드 실패:', error)
+    imageError.value = '이미지 업로드에 실패했습니다. 다시 시도해주세요.'
+  } finally {
+    imageUploading.value = false
+  }
+}
+
+const removeImage = (index) => {
+  const preview = imagePreviews.value[index]
+  if (preview?.startsWith('blob:')) URL.revokeObjectURL(preview)
+  imagePreviews.value.splice(index, 1)
+  const removedUrl = imageUrls.value.splice(index, 1)[0]
+  if (removedUrl && removedUrl.startsWith('http')) {
+    deletePurchaseImage(removedUrl)
+  }
+}
 
 // 오전/오후와 시간을 합쳐서 24시간 형식으로 변환
 const convertTo24Hour = (timeStr, period) => {
@@ -376,6 +540,17 @@ const loadGroupPurchase = async () => {
       endDate: endParts.date,
       endTime: endParts.time,
       endTimePeriod: endParts.period
+    }
+
+    imageUrls.value = data.imageUrl ? [data.imageUrl] : []
+    imagePreviews.value = [...imageUrls.value]
+
+    if (editor?.value) {
+      const rawDescription = data.description || ''
+      const htmlDescription = rawDescription.includes('<')
+        ? rawDescription
+        : markdownParser.render(rawDescription)
+      editor.value.commands.setContent(htmlDescription || '', false)
     }
 
     // 권한 체크
@@ -465,6 +640,21 @@ const handleSubmit = async () => {
   loading.value = true
   try {
     // 백엔드 API 스펙에 맞게 데이터 구성
+    form.value.description = editor?.value?.getHTML() || ''
+    form.value.description = editor?.value?.getHTML() || ''
+    let descriptionHtml = form.value.description
+    if (pendingImages.value.length) {
+      for (const pending of pendingImages.value) {
+        if (!descriptionHtml.includes(pending.localUrl)) continue
+        const uploadedUrl = await uploadPurchaseImage(pending.file)
+        descriptionHtml = descriptionHtml.split(pending.localUrl).join(uploadedUrl)
+        URL.revokeObjectURL(pending.localUrl)
+      }
+      pendingImages.value = pendingImages.value.filter(
+        item => descriptionHtml.includes(item.localUrl)
+      )
+    }
+    form.value.description = descriptionHtml || ''
     const requestData = {
       minQuantity: form.value.minQuantity,
       maxQuantity: form.value.maxQuantity,
@@ -473,7 +663,8 @@ const handleSubmit = async () => {
       discountedPrice: form.value.discountedPrice,
       startDate: convertToOffsetDateTime(form.value.startDate, form.value.startTime, form.value.startTimePeriod),
       endDate: convertToOffsetDateTime(form.value.endDate, form.value.endTime, form.value.endTimePeriod),
-      productId: form.value.productId
+      productId: form.value.productId,
+      imageUrl: imageUrls.value[0] || null
     }
 
     console.log('수정 요청 데이터:', requestData)
@@ -501,6 +692,12 @@ onMounted(() => {
 watch(() => props.id, () => {
   loadGroupPurchase()
   fetchProducts()
+})
+
+onBeforeUnmount(() => {
+  pendingImages.value.forEach(item => URL.revokeObjectURL(item.localUrl))
+  pendingImages.value = []
+  editor?.value?.destroy()
 })
 </script>
 
@@ -586,6 +783,45 @@ watch(() => props.id, () => {
   transition: border-color 0.2s;
 }
 
+.tiptap-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.tiptap-editor {
+  min-height: 220px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 2px solid #2a2a2a;
+  background: #0f0f0f;
+  color: #ffffff;
+  line-height: 1.8;
+  overflow-y: auto;
+}
+
+.tiptap-editor :deep(.ProseMirror) {
+  outline: none;
+  min-height: 190px;
+  font-size: 18px;
+  text-align: center;
+}
+
+.tiptap-editor :deep(img) {
+  max-width: 100%;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
 /* Date input calendar icon */
 .date-input {
   width: 100%;
@@ -661,6 +897,17 @@ watch(() => props.id, () => {
   margin-top: 4px;
 }
 
+.form-error {
+  font-size: 12px;
+  color: #ff6b6b;
+}
+
+.upload-status {
+  margin-top: 12px;
+  color: #999;
+  font-size: 13px;
+}
+
 .selected-product-info {
   background: #0f0f0f;
   border: 1px solid #2a2a2a;
@@ -708,6 +955,34 @@ watch(() => props.id, () => {
   font-weight: 600;
   display: flex;
   gap: 16px;
+}
+
+.image-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.image-preview-item {
+  background: #0f0f0f;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.image-preview-item img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.image-preview-item .btn {
+  width: 100%;
 }
 
 .image-preview {
@@ -776,6 +1051,7 @@ watch(() => props.id, () => {
   .form-row {
     grid-template-columns: 1fr;
   }
+
 
   .form-actions {
     flex-direction: column;

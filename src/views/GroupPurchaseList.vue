@@ -373,7 +373,11 @@ const loadGroupPurchases = async () => {
       const normalizedCategory = normalizeCategory(rawCategory)
       const categoryKorean = normalizedCategory.label
 
-      let image = gp.imageUrl || gp.image || gp.thumbnailUrl
+      // 이미지 우선순위: 백엔드 이미지 > 카테고리별 기본 이미지
+      let image = gp.imageUrl
+        || gp.image
+        || gp.thumbnailUrl
+        || gp.originalUrl
       if (!image || image.trim() === '') {
         image = categoryImages[normalizedCategory.key] || categoryImages[categoryKorean] || categoryImages['PET']
       }

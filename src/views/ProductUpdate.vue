@@ -173,15 +173,15 @@ const handleSubmit = async () => {
 onMounted(async () => {
   try {
     const response = await productApi.getProductById(productId)
-    const product = response.data
+    const product = response.data?.data || response.data
 
     form.value = {
-      title: product.name,
-      category: product.category,
-      currentPrice: product.price,
-      stock: product.stock,
-      originalUrl: product.originalUrl,
-      description: product.description
+      title: product.name || '',
+      category: product.category || '',
+      currentPrice: product.price ?? null,
+      stock: product.stock ?? null,
+      originalUrl: product.originalUrl || product.originalLink || '',
+      description: product.description || ''
     }
   } catch (error) {
     console.error('상품 정보 불러오기 실패:', error)

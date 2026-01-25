@@ -25,6 +25,14 @@ export const api = axios.create({
 // 요청 인터셉터: 로그인 필요 API에 X-Member-Id 헤더 자동 첨부
 api.interceptors.request.use(
   (config) => {
+    // FormData 업로드는 브라우저가 boundary 포함 Content-Type을 자동 설정하도록 둔다.
+    if (config?.data instanceof FormData) {
+      if (config.headers) {
+        delete config.headers["Content-Type"];
+        delete config.headers["content-type"];
+      }
+    }
+
     let memberId = localStorage.getItem("member_id");
     if (!memberId) {
       try {
@@ -177,6 +185,9 @@ export const productApi = {
 
   deleteProduct: (productId) =>
     api.delete(`/products/${productId}`),
+
+  deleteProductImage: (imageUrl) =>
+    api.delete('/products/images', { params: { imageUrl } }),
 };
 
 /* =========================

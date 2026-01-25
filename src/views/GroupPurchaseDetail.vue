@@ -42,7 +42,8 @@
           </div>
           <div class="description">
             <h3>설명</h3>
-            <p>{{ groupPurchase.description || '설명이 없습니다.' }}</p>
+            <div v-if="renderedDescription" v-html="renderedDescription"></div>
+            <p v-else>설명이 없습니다.</p>
           </div>
         </div>
 
@@ -153,6 +154,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import MarkdownIt from 'markdown-it'
 import { groupPurchaseApi, cartApi } from '@/api/axios'
 
 // eslint-disable-next-line no-undef
@@ -167,6 +169,7 @@ const router = useRouter()
 const groupPurchase = ref(null)
 const loading = ref(false)
 const imageError = ref(false)
+const markdownParser = new MarkdownIt({ html: true })
 const participateQuantity = ref(1)
 const participateLoading = ref(false)
 
@@ -212,6 +215,12 @@ const productImage = computed(() => {
     image = categoryImages[category] || categoryImages['PET']
   }
   return image || getDefaultImage()
+})
+
+const renderedDescription = computed(() => {
+  const raw = groupPurchase.value?.description || ''
+  if (!raw) return ''
+  return markdownParser.render(raw)
 })
 
 const handleImageError = () => {

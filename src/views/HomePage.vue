@@ -475,13 +475,14 @@ const mapToProductCard = (gp) => {
   const categoryCode = product.category
   const categoryKorean = categoryMap[categoryCode] || categoryCode || '기타'
 
-  let image = categoryImages[categoryCode] || categoryImages['PET']
-
-  // 이미지 우선순위
-//  let image = product.originalUrl
-//  if (!image || image.trim() === '') {
-//    image = categoryImages[categoryCode] || categoryImages['PET']
-//  }
+  // 이미지 우선순위: 공동구매 이미지 → 상품 이미지 → 카테고리 기본 이미지
+  let image = gp.imageUrl
+    || product.imageUrl
+    || product.image
+    || product.thumbnailUrl
+  if (!image || image.trim() === '') {
+    image = categoryImages[categoryCode] || categoryImages['PET']
+  }
 
   const originalPrice = product.price || 0
   const discountedPrice = gp.discountedPrice ?? originalPrice

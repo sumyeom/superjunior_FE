@@ -65,9 +65,35 @@
         </div>
 
         <div class="form-section">
+          <h3>상품 이미지</h3>
+          <div class="form-group">
+            <label for="productImage">상품 이미지 *</label>
+            <input
+              id="productImage"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              @change="handleImageChange"
+              required
+            />
+            <p class="form-hint">jpg, png, webp / 최대 10MB</p>
+            <p v-if="imageError" class="form-error">{{ imageError }}</p>
+          </div>
+          <div v-if="imagePreviewUrl" class="image-preview">
+            <img :src="imagePreviewUrl" alt="상품 이미지 미리보기" />
+            <button type="button" class="btn btn-outline btn-sm" @click="clearImage">
+              이미지 제거
+            </button>
+          </div>
+          <p v-if="form.imageUrl && !imageUploading" class="upload-status success">
+            이미지 업로드 완료
+          </p>
+          <p v-if="imageUploading" class="upload-status">이미지 업로드 중...</p>
+        </div>
+
+        <div class="form-section">
           <h3>상품 원본 링크</h3>
           <div class="form-group">
-            <label for="originalUrl">상품 원본 URL *</label>
+            <label for="originalUrl">상품 원본 URL</label>
             <input
               id="originalUrl"
               type="url"
@@ -75,6 +101,7 @@
               placeholder="상품 원본 페이지 URL을 입력하세요"
               required
             />
+            <p class="form-hint">상품 원본 페이지 링크를 입력해주세요.</p>
           </div>
         </div>
 
@@ -106,7 +133,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { productApi } from '@/api/axios'
+import axios from 'axios'
+import api, { productApi } from '@/api/axios'
 import { generateUUID } from '@/utils/uuid'
 
 const router = useRouter()
@@ -117,11 +145,16 @@ const form = ref({
   currentPrice: null,
   stock: null,
   originalUrl: '',
+  imageUrl: '',
   description: ''
 })
 
 const loading = ref(false)
 const currentIdempotencyKey = ref('')
+const selectedImageFile = ref(null)
+const imagePreviewUrl = ref('')
+const imageUploading = ref(false)
+const imageError = ref('')
 
 const isFormValid = computed(() => {
   return (
@@ -130,6 +163,7 @@ const isFormValid = computed(() => {
     form.value.currentPrice &&
     form.value.stock !== null &&
     form.value.originalUrl &&
+    (form.value.imageUrl || selectedImageFile.value) &&
     form.value.description
   )
 })
@@ -137,6 +171,80 @@ const isFormValid = computed(() => {
 const handleCancel = () => {
   if (confirm('작성 중인 내용이 사라집니다. 정말 취소하시겠습니까?')) {
     router.push('/seller')
+  }
+}
+
+const handleImageChange = async (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    imageError.value = 'jpg, png, webp 형식만 업로드할 수 있습니다.'
+    event.target.value = ''
+    return
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    imageError.value = '이미지 크기는 10MB를 초과할 수 없습니다.'
+    event.target.value = ''
+    return
+  }
+
+  imageError.value = ''
+  selectedImageFile.value = file
+  imagePreviewUrl.value = URL.createObjectURL(file)
+  form.value.imageUrl = ''
+
+  try {
+    await uploadProductImage()
+  } catch (error) {
+    console.error('이미지 업로드 실패:', error)
+    imageError.value = '이미지 업로드에 실패했습니다. 다시 시도해주세요.'
+  }
+}
+
+const clearImage = () => {
+  selectedImageFile.value = null
+  if (imagePreviewUrl.value) {
+    URL.revokeObjectURL(imagePreviewUrl.value)
+  }
+  imagePreviewUrl.value = ''
+  form.value.imageUrl = ''
+  imageError.value = ''
+}
+
+const requestPresignedUrl = async (file) => {
+  const response = await api.post('/products/images/presigned-url', {
+    fileName: file.name,
+    contentType: file.type
+  })
+  const data = response?.data?.data || response?.data || {}
+  return {
+    presignedUrl: data.presignedUrl,
+    imageUrl: data.imageUrl
+  }
+}
+
+const uploadToS3 = async (file, presignedUrl) => {
+  await axios.put(presignedUrl, file, {
+    headers: {
+      'Content-Type': file.type
+    }
+  })
+}
+
+const uploadProductImage = async () => {
+  if (!selectedImageFile.value) return
+  imageUploading.value = true
+  try {
+    const { presignedUrl, imageUrl } = await requestPresignedUrl(selectedImageFile.value)
+    if (!presignedUrl || !imageUrl) {
+      throw new Error('Presigned URL 발급에 실패했습니다.')
+    }
+    await uploadToS3(selectedImageFile.value, presignedUrl)
+    form.value.imageUrl = imageUrl
+  } finally {
+    imageUploading.value = false
   }
 }
 
@@ -174,6 +282,15 @@ const handleSubmit = async () => {
 
   loading.value = true
   try {
+    if (selectedImageFile.value && !form.value.imageUrl) {
+      await uploadProductImage()
+    }
+
+    if (!form.value.imageUrl) {
+      alert('상품 이미지를 업로드해주세요.')
+      return
+    }
+
     if (!currentIdempotencyKey.value) {
       currentIdempotencyKey.value = generateUUID()
     }
@@ -186,6 +303,7 @@ const handleSubmit = async () => {
       description: form.value.description,
       stock: form.value.stock,
       originalUrl: form.value.originalUrl,
+      imageUrl: form.value.imageUrl,
       idempotencyKey: currentIdempotencyKey.value
     }
 
@@ -390,6 +508,30 @@ onMounted(() => {
   font-size: 12px;
   color: #666;
   margin-top: -4px;
+}
+
+.image-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.image-preview img {
+  width: 100%;
+  max-width: 360px;
+  border-radius: 12px;
+  border: 1px solid #2a2a2a;
+}
+
+.upload-status {
+  margin-top: 12px;
+  color: #999;
+  font-size: 13px;
+}
+
+.upload-status.success {
+  color: #51cf66;
 }
 
 .form-actions {
