@@ -32,7 +32,7 @@
               <input type="checkbox" v-model="rememberMe" />
               <span>로그인 상태 유지</span>
             </label>
-            <!-- <router-link to="/forgot-password" class="forgot-link">비밀번호 찾기</router-link> -->
+            <router-link to="/forgot-password" class="forgot-link">비밀번호 찾기</router-link>
           </div>
           <div v-if="errorMessage" class="error-message">
             {{ errorMessage }}
@@ -40,14 +40,17 @@
           <button type="submit" class="btn btn-primary" :disabled="loading">
             {{ loading ? '로그인 중...' : '로그인' }}
           </button>
-          <div class="divider">
+          <!-- <div class="divider">
             <span>또는</span>
           </div>
           <div class="social-login">
-            <button type="button" class="btn btn-social btn-google" @click="handleGoogleLogin">
+            <button type="button" class="btn btn-social btn-google">
               <span>🔍</span> Google로 로그인
             </button>
-          </div>
+            <button type="button" class="btn btn-social btn-kakao">
+              <span>💬</span> Kakao로 로그인
+            </button>
+          </div> -->
           <div class="signup-link">
             <span>계정이 없으신가요?</span>
             <router-link to="/register">회원가입</router-link>
@@ -174,13 +177,6 @@ const handleLogin = async () => {
   } finally {
     loading.value = false
   }
-}
-
-// 구글 로그인 핸들러
-const handleGoogleLogin = () => {
-  // 백엔드 구글 OAuth 엔드포인트로 리다이렉트
-  const googleAuthUrl = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/oauth2/authorization/google`
-  window.location.href = googleAuthUrl
 }
 </script>
 <style scoped>
@@ -370,8 +366,16 @@ const handleGoogleLogin = () => {
 }
 
 .btn-google:hover {
-  background: rgba(219, 68, 55, 0.1);
-  border-color: #db4437;
+  background: #fff5f5;
+}
+
+.btn-kakao {
+  border-color: #fee500;
+  color: #3c1e1e;
+}
+
+.btn-kakao:hover {
+  background: #fffef0;
 }
 
 .signup-link {
