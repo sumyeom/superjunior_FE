@@ -32,7 +32,6 @@
               <input type="checkbox" v-model="rememberMe" />
               <span>로그인 상태 유지</span>
             </label>
-            <router-link to="/forgot-password" class="forgot-link">비밀번호 찾기</router-link>
           </div>
           <div v-if="errorMessage" class="error-message">
             {{ errorMessage }}
@@ -259,7 +258,6 @@ const handleLogin = async () => {
 
 .form-options {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   font-size: 14px;
 }
@@ -276,16 +274,6 @@ const handleLogin = async () => {
   width: 18px;
   height: 18px;
   cursor: pointer;
-}
-
-.forgot-link {
-  color: #ffffff;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.forgot-link:hover {
-  text-decoration: underline;
 }
 
 .btn {
