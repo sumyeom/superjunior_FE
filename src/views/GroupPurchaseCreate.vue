@@ -142,6 +142,7 @@
 
         <div class="form-section">
           <h3>기간 정보</h3>
+          <p class="form-hint">공동구매 오픈은 시작일 / 시작시간에 따라 자동으로 오픈됩니다.</p>
           <div class="form-row">
             <div class="form-group">
               <label for="startDate">시작일 *</label>

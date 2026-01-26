@@ -973,6 +973,11 @@ body.theme-light .progress-bar {
   font-size: 12px;
 }
 
+body.theme-light .badge {
+  background: rgba(0, 0, 0, 0.65);
+  color: #ffffff;
+}
+
 .bookmark {
   position: absolute;
   top: 12px;

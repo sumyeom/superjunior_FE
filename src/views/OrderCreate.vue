@@ -384,15 +384,21 @@ const handleOrderSubmit = async () => {
       const orderData = response.data?.data || response.data
       console.log('주문 생성 성공:', orderData)
       
-      // 주문 ID 추출 (장바구니 주문은 배열로 올 수 있음)
+      // 주문 ID 추출 (장바구니 주문은 배열/배열형 응답 모두 대응)
       const firstOrder = Array.isArray(orderData) ? orderData[0] : orderData
-      const orderId = firstOrder?.orderId || firstOrder?.id
+      const orderId = firstOrder?.orderId
+        || firstOrder?.id
+        || (Array.isArray(orderData?.orderIds) ? orderData.orderIds[0] : null)
+        || (Array.isArray(orderData) ? orderData[0] : null)
       if (!orderId) {
         throw new Error('주문 ID를 받지 못했습니다.')
       }
+      const itemCount = selectedCartIds.value.length > 0
+        ? selectedCartIds.value.length
+        : orderItems.value.length
       const firstName = orderItems.value[0]?.groupPurchase?.title || '공동구매'
-      const orderName = orderItems.value.length > 1
-        ? `${firstName} 외 ${orderItems.value.length - 1}건`
+      const orderName = itemCount > 1
+        ? `${firstName} 외 ${itemCount - 1}건`
         : firstName
       router.push({ name: 'order-payment', query: { orderId, amount: totalAmount.value, groupPurchaseName: orderName } })
     } else {
