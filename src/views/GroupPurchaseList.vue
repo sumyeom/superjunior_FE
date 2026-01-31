@@ -472,7 +472,10 @@ const goToDetail = (id) => {
 }
 
 const goToCreate = () => {
-  router.push({ name: 'group-purchase-create' })
+  router.push({
+    name: 'group-purchase-create',
+    query: { from: route.fullPath }
+  })
 }
 
 const handleEdit = (id) => {

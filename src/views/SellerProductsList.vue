@@ -52,7 +52,10 @@
 
       <div v-else-if="sellerProducts.length === 0" class="empty-state">
         <p>등록된 상품이 없습니다.</p>
-        <router-link to="/seller/register/product-register" class="btn btn-primary">
+        <router-link
+          :to="{ path: '/seller/register/product-register', query: { from: route.fullPath } }"
+          class="btn btn-primary"
+        >
           상품 등록하기
         </router-link>
       </div>
@@ -137,10 +140,11 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { productApi } from '@/api/axios'
 
 const router = useRouter()
+const route = useRoute()
 
 const loading = ref(false)
 const page = ref(0)

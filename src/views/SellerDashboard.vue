@@ -159,7 +159,7 @@
 
             <div class="header-actions">
               <router-link
-                to="/seller/register/product-register"
+                :to="{ path: '/seller/register/product-register', query: { from: route.fullPath } }"
                 class="btn-new-product"
               >
                 + 상품 등록
@@ -197,7 +197,7 @@
               <div v-if="sellerProducts.length === 0" class="empty-state">
                 <p>등록된 상품이 없습니다</p>
                 <router-link
-                  to="/seller/register/product-register"
+                  :to="{ path: '/seller/register/product-register', query: { from: route.fullPath } }"
                   class="btn btn-primary"
                 >
                   상품 등록하기
@@ -267,7 +267,10 @@
             </div>
 
             <div class="header-actions">
-              <router-link to="/group-purchases/create" class="btn-new-product">
+              <router-link
+                :to="{ path: '/group-purchases/create', query: { from: route.fullPath } }"
+                class="btn-new-product"
+              >
                 + 공동구매 등록
               </router-link>
               <router-link to="/group-purchases" class="link">
@@ -308,7 +311,12 @@
               </div>
               <div v-if="sellerGroupPurchases.length === 0" class="empty-state">
                 <p>진행 중인 공동구매가 없습니다</p>
-                <router-link to="/group-purchases/create" class="btn btn-primary">공동구매 등록하기</router-link>
+                <router-link
+                  :to="{ path: '/group-purchases/create', query: { from: route.fullPath } }"
+                  class="btn btn-primary"
+                >
+                  공동구매 등록하기
+                </router-link>
               </div>
             </template>
           </div>
@@ -532,13 +540,14 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { sellerProfile, sellerNotices, sellerQna } from '@/data/products'
 import { authAPI } from '@/api/auth'
 import { sellerBalanceApi, productApi } from '@/api/axios'
 import { formatDateTime } from '@/utils/timeFormatter'
 
 const router = useRouter()
+const route = useRoute()
 
 const seller = ref({ ...sellerProfile })
 const sellerProducts = ref([])

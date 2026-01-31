@@ -252,13 +252,14 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import api, { groupPurchaseApi, productApi } from '@/api/axios'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Image from '@tiptap/extension-image'
 
 const router = useRouter()
+const route = useRoute()
 
 // 오늘 날짜를 Date 객체로 반환
 const getTodayDate = () => {
@@ -316,9 +317,39 @@ const selectedProduct = computed(() => {
   return products.value.find(p => p.productId === form.value.productId)
 })
 
+const getReturnPath = () => {
+  const from = route.query.from
+  if (typeof from !== 'string') return null
+  const rawPath = decodeURIComponent(from)
+  if (rawPath.startsWith('/')) {
+    return rawPath
+  }
+  return null
+}
+
+const goBackOrFallback = () => {
+  const returnPath = getReturnPath()
+  if (returnPath) {
+    router.push(returnPath)
+    return
+  }
+  if (window.history.length > 1) {
+    router.back()
+    return
+  }
+  router.push('/seller')
+}
+
+const handlePopState = () => {
+  const returnPath = getReturnPath()
+  if (returnPath) {
+    router.replace(returnPath)
+  }
+}
+
 const handleCancel = () => {
   if (confirm('작성 중인 내용이 사라집니다. 정말 취소하시겠습니까?')) {
-    router.push('/seller')
+    goBackOrFallback()
   }
 }
 
@@ -594,6 +625,7 @@ const fetchProducts = async () => {
 }
 
 onMounted(() => {
+  window.addEventListener('popstate', handlePopState)
   // 로그인 체크
   const memberId = localStorage.getItem('member_id')
   if (!memberId) {
@@ -614,6 +646,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('popstate', handlePopState)
   pendingImages.value.forEach(item => URL.revokeObjectURL(item.localUrl))
   pendingImages.value = []
   editor?.value?.destroy()

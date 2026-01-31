@@ -18,42 +18,42 @@
               <h4 class="nav-section-title">계정 정보</h4>
               <button
                 :class="['nav-item', { active: activeMenu === 'profile' }]"
-                @click="activeMenu = 'profile'"
+                @click="setActiveMenu('profile')"
               >
                 <span class="nav-icon">👤</span>
                 <span>기본 정보</span>
               </button>
               <button
                 :class="['nav-item', { active: activeMenu === 'address' }]"
-                @click="activeMenu = 'address'"
+                @click="setActiveMenu('address')"
               >
                 <span class="nav-icon">📍</span>
                 <span>주소 관리</span>
               </button>
               <button
                 :class="['nav-item', { active: activeMenu === 'point' }]"
-                @click="activeMenu = 'point'"
+                @click="setActiveMenu('point')"
               >
                 <span class="nav-icon">💰</span>
                 <span>포인트</span>
               </button>
               <button
                 :class="['nav-item', { active: activeMenu === 'payments' }]"
-                @click="activeMenu = 'payments'"
+                @click="setActiveMenu('payments')"
               >
                 <span class="nav-icon">💳</span>
                 <span>결제 내역</span>
               </button>
               <button
                 :class="['nav-item', { active: activeMenu === 'account-settings' }]"
-                @click="activeMenu = 'account-settings'"
+                @click="setActiveMenu('account-settings')"
               >
                 <span class="nav-icon">⚙️</span>
                 <span>계정 설정</span>
               </button>
               <button
                 :class="['nav-item', { active: activeMenu === 'notification-settings' }]"
-                @click="activeMenu = 'notification-settings'"
+                @click="setActiveMenu('notification-settings')"
               >
                 <span class="nav-icon">🔔</span>
                 <span>알림 설정</span>
@@ -64,14 +64,14 @@
               <h4 class="nav-section-title">쇼핑 정보</h4>
               <button
                 :class="['nav-item', { active: activeMenu === 'orders' }]"
-                @click="activeMenu = 'orders'"
+                @click="setActiveMenu('orders')"
               >
                 <span class="nav-icon">📦</span>
                 <span>주문 내역</span>
               </button>
               <button
                 :class="['nav-item', { active: activeMenu === 'cancelled-orders' }]"
-                @click="activeMenu = 'cancelled-orders'"
+                @click="setActiveMenu('cancelled-orders')"
               >
                 <span class="nav-icon">❌</span>
                 <span>주문 취소내역</span>
@@ -1468,6 +1468,14 @@ const route = useRoute()
 // 활성 메뉴 (기본값: 프로필)
 const activeMenu = ref('profile')
 
+const setActiveMenu = (menu) => {
+  activeMenu.value = menu
+  router.replace({
+    path: '/me/profile',
+    query: { ...route.query, tab: menu }
+  })
+}
+
 const syncActiveMenuFromRoute = () => {
   const tab = route.query.tab
   const allowedTabs = [
@@ -2226,7 +2234,7 @@ const loadCancelledOrders = async (page = 0) => {
 }
 
 const openSellerMenu = (menu) => {
-  activeMenu.value = menu
+  setActiveMenu(menu)
 }
 
 const goToSellerSettlement = () => {
@@ -2237,12 +2245,20 @@ const goToSellerProducts = () => {
   router.push('/seller/products')
 }
 
+const getProfileReturnPath = () => `/me/profile?tab=${activeMenu.value}`
+
 const goToProductRegister = () => {
-  router.push('/seller/register/product-register')
+  router.push({
+    path: '/seller/register/product-register',
+    query: { from: getProfileReturnPath() }
+  })
 }
 
 const goToGroupPurchaseCreate = () => {
-  router.push('/group-purchases/create')
+  router.push({
+    path: '/group-purchases/create',
+    query: { from: getProfileReturnPath() }
+  })
 }
 
 const goToGroupPurchaseManage = () => {
