@@ -18,16 +18,24 @@ const router = useRouter()
 
 onMounted(async () => {
   const orderId = route.query.orderId || sessionStorage.getItem('pending_order_payment_id') || ''
-  const code = route.query.code || route.query.errorCode || ''
-  const message = route.query.message || route.query.errorMessage || ''
+  const amount = Number(route.query.amount) || 0
+  const paymentKey = route.query.paymentKey || route.query.payment_key || ''
+  const errorCode = route.query.code || route.query.errorCode || route.query.error_code || ''
+  const errorMessage = route.query.message || route.query.errorMessage || route.query.error_message || '결제가 취소되었습니다.'
+  
+  // 토스페이먼츠에서 전달하는 rawPayload (쿼리 파라미터 전체를 JSON으로 변환)
+  const rawPayload = JSON.stringify(route.query)
 
   if (!orderId) return
 
   try {
     await paymentApi.failPayment({
       orderId,
-      code,
-      message
+      paymentKey: paymentKey || 'USER_CANCEL', // X 버튼 클릭 시 paymentKey가 없을 수 있음
+      errorCode: errorCode || 'USER_CANCEL',
+      errorMessage,
+      amount,
+      rawPayload
     })
   } catch (error) {
     console.error('결제 실패 처리 요청 실패:', error)
@@ -43,10 +51,10 @@ const goBack = () => {
 
 <style scoped>
 .order-callback-page {
-  background: #0a0a0a;
+  background: var(--bg);
   min-height: 100vh;
   padding: 32px 0 60px;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .container {

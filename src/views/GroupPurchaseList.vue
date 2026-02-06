@@ -577,7 +577,7 @@ watch(filteredGroupPurchases, () => {
 
 <style scoped>
 .group-purchase-list-page {
-  background: #0a0a0a;
+  background: var(--bg);
   min-height: 100vh;
   padding: 32px 0 60px;
 }
@@ -599,7 +599,7 @@ watch(filteredGroupPurchases, () => {
 .page-header h1 {
   font-size: 32px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin-bottom: 8px;
 }
 
@@ -634,9 +634,9 @@ watch(filteredGroupPurchases, () => {
   width: 100%;
   padding: 12px 14px;
   border-radius: 10px;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border);
   background: #111111;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .search-control {
@@ -691,8 +691,8 @@ watch(filteredGroupPurchases, () => {
 }
 
 .product-card {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 20px;
   overflow: hidden;
   display: flex;
@@ -740,16 +740,16 @@ watch(filteredGroupPurchases, () => {
 .card-body h2 {
   margin: 0;
   font-size: 20px;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .card-body .subtitle {
-  color: #999;
+  color: var(--muted);
   font-size: 14px;
 }
 
 .category {
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
   font-size: 13px;
 }
@@ -763,24 +763,24 @@ watch(filteredGroupPurchases, () => {
 .current-price {
   font-size: 22px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .meta {
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
 }
 
 .original {
   text-decoration: line-through;
-  color: #666;
+  color: var(--muted);
 }
 
 .progress-head {
   display: flex;
   justify-content: space-between;
   font-size: 13px;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .progress {
@@ -791,7 +791,7 @@ watch(filteredGroupPurchases, () => {
 
 .progress-bar {
   height: 8px;
-  background: #0f0f0f;
+  background: var(--bg);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -810,7 +810,7 @@ watch(filteredGroupPurchases, () => {
 
 .time {
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
 }
 
 .footer-actions {
@@ -883,7 +883,7 @@ watch(filteredGroupPurchases, () => {
   border-radius: 16px;
   overflow: hidden;
   flex-shrink: 0;
-  background: #0f0f0f;
+  background: var(--bg);
 }
 
 .gp-image img {
@@ -912,7 +912,7 @@ watch(filteredGroupPurchases, () => {
   margin: 0;
   font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   line-height: 1.4;
   word-break: break-word;
 }
@@ -933,7 +933,7 @@ watch(filteredGroupPurchases, () => {
 .gp-price-row .price {
   font-size: 22px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .gp-price-row .original-price {
@@ -991,7 +991,7 @@ watch(filteredGroupPurchases, () => {
   transition: all 0.2s ease;
   border: 1px solid transparent;
   background: transparent;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .btn-primary {
@@ -1033,9 +1033,9 @@ watch(filteredGroupPurchases, () => {
 .page-btn {
   padding: 10px 18px;
   border-radius: 999px;
-  border: 1px solid #2a2a2a;
-  background: #1a1a1a;
-  color: #ffffff;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1044,7 +1044,7 @@ watch(filteredGroupPurchases, () => {
 .page-btn:hover:not(:disabled) {
   background: #ffffff;
   color: #0a0a0a;
-  border-color: #ffffff;
+  border-color: var(--text);
 }
 
 .page-btn:disabled {
@@ -1056,7 +1056,7 @@ watch(filteredGroupPurchases, () => {
   min-width: 80px;
   text-align: center;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text);
 }
 
 @media (max-width: 768px) {
