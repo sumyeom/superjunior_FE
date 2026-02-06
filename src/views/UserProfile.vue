@@ -2,7 +2,7 @@
   <main class="page">
     <div class="container">
       <div class="page-header">
-        <h1>마이페이지</h1>
+        <h1>마이 공구</h1>
       </div>
 
       <div class="mypage-layout">
@@ -117,6 +117,12 @@
               >
                 <span class="nav-icon">🏪</span>
                 <span>판매자 신청</span>
+              </button>
+            </div>
+            <div class="nav-section nav-section-logout">
+              <button class="nav-item logout-item" @click="handleLogout">
+                <span class="nav-icon">⎋</span>
+                <span>로그아웃</span>
               </button>
             </div>
           </nav>
@@ -585,7 +591,7 @@
                   <div class="order-header">
                     <div>
                       <span class="order-date">{{ formatDate(order.createdAt) }}</span>
-                      <span class="order-number">주문번호: {{ order.orderId || '-' }}</span>
+                      <span class="order-number">주문번호: {{ order.orderNumber || order.orderId || '-' }}</span>
                     </div>
                     <span class="order-status" :class="order.status?.toLowerCase()">{{ getStatusText(order.status) }}</span>
                   </div>
@@ -688,7 +694,7 @@
                     <div class="order-header">
                     <div>
                       <span class="order-date">{{ formatDate(order.createdAt) }}</span>
-                      <span class="order-number">주문번호: {{ order.orderId || '-' }}</span>
+                      <span class="order-number">주문번호: {{ order.orderNumber || order.orderId || '-' }}</span>
                     </div>
                       <span class="order-status cancelled">{{ getStatusText(order.status) }}</span>
                     </div>
@@ -1096,7 +1102,7 @@
                       class="order-dropdown-item"
                     >
                       <div class="order-dropdown-left">
-                        <p class="order-id">#{{ order.orderId }}</p>
+                        <p class="order-id">#{{ order.orderNumber || order.orderId }}</p>
                         <p class="order-date">{{ formatDateShort(order.createdAt) }}</p>
                         <p class="order-buyer">{{ order.buyerName }}</p>
                         <p class="order-detail">{{ order.quantity }}개 × ₩{{ formatPrice(order.price) }}</p>
@@ -1300,7 +1306,7 @@
                 <div class="info-list">
                   <div class="info-item">
                     <span class="label">주문번호</span>
-                    <span class="value">{{ selectedOrder.orderId }}</span>
+                    <span class="value">{{ selectedOrder.orderNumber || selectedOrder.orderId }}</span>
                   </div>
                   <div class="info-item">
                     <span class="label">주문일자</span>
@@ -2187,11 +2193,11 @@ const isSeller = computed(() => {
   return roleUpper === 'SELLER' || roleUpper === 'ROLE_SELLER' || roleUpper.includes('SELLER')
 })
 
-// 주문 내역 (취소 제외)
+// 주문 내역 (취소 제외, PENDING 제외, EXPIRED 제외)
 const activeOrders = computed(() => {
   return orderHistory.value.filter(order => {
     const status = order.status?.toUpperCase()
-    return status !== 'CANCELLED' && status !== 'REFUNDED'
+    return status !== 'CANCELLED' && status !== 'REFUNDED' && status !== 'PENDING' && status !== 'EXPIRED'
   })
 })
 
@@ -2634,6 +2640,7 @@ const getStatusText = (status) => {
     'REFUND_REQUESTED': '반품 요청',
     'REFUNDED': '반품 완료',
     'PURCHASE_CONFIRMED': '구매 확정',
+    'EXPIRED': '주문 만료',
     'pending': '결제 대기',
     'payment_completed': '결제 완료',
     'payment_failed': '결제 실패',
@@ -2646,7 +2653,8 @@ const getStatusText = (status) => {
     'reversed': '번복 완료',
     'refund_requested': '반품 요청',
     'refunded': '반품 완료',
-    'purchase_confirmed': '구매 확정'
+    'purchase_confirmed': '구매 확정',
+    'expired': '주문 만료'
   }
 
   return statusMap[status] || status
@@ -2966,6 +2974,22 @@ const handleDeleteAccount = async () => {
   }
 }
 
+const handleLogout = async () => {
+  try {
+    await authAPI.logout()
+  } catch (error) {
+    console.warn('로그아웃 요청 실패:', error)
+  }
+  localStorage.removeItem('user_role')
+  localStorage.removeItem('user_email')
+  localStorage.removeItem('user_data')
+  localStorage.removeItem('user_profile')
+  localStorage.removeItem('member_id')
+  localStorage.removeItem('user_name')
+  window.dispatchEvent(new Event('auth-changed'))
+  router.push('/')
+}
+
 // 알림 설정 로드
 const loadNotificationSettings = async () => {
   loadingNotificationSettings.value = true
@@ -3054,7 +3078,7 @@ const saveNotificationSettings = async () => {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.6);
 
-  color: #ffffff;
+  color: var(--text);
   font-size: 16px;
   font-weight: 500;
 
@@ -3069,7 +3093,7 @@ const saveNotificationSettings = async () => {
 /* hover 효과 */
 .delete-btn:hover {
   background: rgba(255, 255, 255, 0.1);
-  border-color: #ffffff;
+  border-color: var(--text);
 }
 
 /* 비활성화 상태 */
@@ -3079,8 +3103,8 @@ const saveNotificationSettings = async () => {
 }
 
 .page {
-  background: #0a0a0a;
-  color: #ffffff;
+  background: var(--bg);
+  color: var(--text);
   min-height: 100vh;
   padding: 32px 0 60px;
 }
@@ -3099,7 +3123,12 @@ const saveNotificationSettings = async () => {
   font-size: 32px;
   font-weight: 700;
   margin: 0;
-  color: #ffffff;
+  color: var(--text);
+}
+
+/* 라이트 모드: 마이 공구 제목 */
+:global(body.theme-light) .container h1 {
+  color: #0f172a;
 }
 
 /* 마이페이지 레이아웃 */
@@ -3112,8 +3141,8 @@ const saveNotificationSettings = async () => {
 
 /* 사이드바 */
 .sidebar {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px;
   height: fit-content;
@@ -3121,22 +3150,28 @@ const saveNotificationSettings = async () => {
   top: 32px;
 }
 
+/* 라이트 모드: 카드 그림자 */
+:global(body.theme-light) .sidebar {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: none !important;
+}
+
 .user-welcome {
   padding-bottom: 20px;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--border);
   margin-bottom: 20px;
 }
 
 .user-welcome h3 {
   font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin: 0 0 8px 0;
 }
 
 .user-welcome p {
   font-size: 14px;
-  color: #999;
+  color: var(--muted);
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3158,7 +3193,7 @@ const saveNotificationSettings = async () => {
 .nav-section-title {
   font-size: 13px;
   font-weight: 600;
-  color: #666;
+  color: var(--muted);
   margin: 0 0 8px 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -3172,7 +3207,7 @@ const saveNotificationSettings = async () => {
   background: transparent;
   border: none;
   border-radius: 8px;
-  color: #e0e0e0;
+  color: var(--text);
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
@@ -3182,19 +3217,36 @@ const saveNotificationSettings = async () => {
 }
 
 .nav-item:hover {
-  background: #2a2a2a;
-  color: #ffffff;
+  background: var(--hover);
+  color: var(--text);
 }
 
 .nav-item.active {
-  background: #ffffff;
-  color: #0a0a0a;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
   font-weight: 600;
+}
+
+/* 라이트 모드: 선택된 탭 스타일 */
+:global(body.theme-light) .nav-item.active {
+  background: #51cf66;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.nav-item.logout-item {
+  padding: 8px 12px;
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+.nav-item.logout-item:hover {
+  opacity: 1;
 }
 
 .nav-item.seller-application {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
 }
 
@@ -3211,11 +3263,22 @@ const saveNotificationSettings = async () => {
 
 /* 컨텐츠 영역 */
 .content-area {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 32px;
   min-height: 600px;
+}
+
+/* 라이트 모드: 컨텐츠 영역 배경 개선 */
+:global(body.theme-light) .content-area {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+:global(body.theme-light) .section-title {
+  color: #0f172a;
 }
 
 .content-section {
@@ -3230,7 +3293,7 @@ const saveNotificationSettings = async () => {
 }
 
 .seller-sales-section .seller-sales-hero {
-  background: #151515;
+  background: var(--hover);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 20px;
   padding: 28px;
@@ -3242,15 +3305,30 @@ const saveNotificationSettings = async () => {
   margin-bottom: 24px;
 }
 
+/* 라이트 모드: 판매자 센터 히어로 섹션 */
+:global(body.theme-light) .seller-sales-section .seller-sales-hero {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
 .seller-sales-hero h3 {
   margin: 0 0 6px 0;
   font-size: 22px;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .seller-sales-hero p {
   margin: 0;
-  color: #c2c2c2;
+  color: var(--muted);
+}
+
+/* 라이트 모드: 판매자 센터 히어로 텍스트 */
+:global(body.theme-light) .seller-sales-hero h3 {
+  color: #0f172a;
+}
+
+:global(body.theme-light) .seller-sales-hero p {
+  color: #666666;
 }
 
 .hero-actions {
@@ -3267,15 +3345,21 @@ const saveNotificationSettings = async () => {
 }
 
 .sales-stat-card {
-  background: #151515;
+  background: var(--hover);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   padding: 18px;
 }
 
+/* 라이트 모드: 판매 통계 카드 */
+:global(body.theme-light) .sales-stat-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
 .stat-label {
   margin: 0 0 8px 0;
-  color: #8e8e8e;
+  color: var(--muted);
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -3285,13 +3369,26 @@ const saveNotificationSettings = async () => {
   margin: 0;
   font-size: 32px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .stat-subtext {
   margin: 6px 0 0 0;
-  color: #a8a8a8;
+  color: var(--muted);
   font-size: 13px;
+}
+
+/* 라이트 모드: 판매 통계 텍스트 */
+:global(body.theme-light) .stat-label {
+  color: #666666;
+}
+
+:global(body.theme-light) .stat-value {
+  color: #0f172a;
+}
+
+:global(body.theme-light) .stat-subtext {
+  color: #666666;
 }
 
 .seller-sales-grid {
@@ -3331,16 +3428,16 @@ const saveNotificationSettings = async () => {
 
 .seller-edit-form label {
   font-size: 13px;
-  color: #c0c0c0;
+  color: var(--muted);
 }
 
 .seller-edit-form input,
 .seller-edit-form select {
   padding: 10px 14px;
   border-radius: 10px;
-  border: 1px solid #2a2a2a;
-  background: #0f0f0f;
-  color: #ffffff;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
 }
 
 .seller-edit-form .form-error {
@@ -3358,7 +3455,7 @@ const saveNotificationSettings = async () => {
   padding: 16px;
   background: rgba(255, 255, 255, 0.02);
   border-radius: 12px;
-  color: #bdbdbd;
+  color: var(--muted);
   font-size: 14px;
 }
 
@@ -3374,7 +3471,7 @@ const saveNotificationSettings = async () => {
   padding: 24px;
   border: 1px dashed rgba(255, 255, 255, 0.12);
   border-radius: 12px;
-  color: #c0c0c0;
+  color: var(--muted);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3401,13 +3498,13 @@ const saveNotificationSettings = async () => {
 .hero-title {
   margin: 0;
   font-size: 18px;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 700;
 }
 
 .hero-sub {
   font-size: 13px;
-  color: #a0a0a0;
+  color: var(--muted);
 }
 
 .hero-meta {
@@ -3420,13 +3517,13 @@ const saveNotificationSettings = async () => {
 .hero-price {
   font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .hero-progress,
 .hero-updated {
   font-size: 13px;
-  color: #cfcfcf;
+  color: var(--text);
 }
 
 .seller-mini-list {
@@ -3458,13 +3555,13 @@ const saveNotificationSettings = async () => {
 
 .mini-title {
   margin: 0;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
 }
 
 .mini-sub {
   font-size: 13px;
-  color: #a0a0a0;
+  color: var(--muted);
 }
 
 .mini-meta {
@@ -3473,17 +3570,17 @@ const saveNotificationSettings = async () => {
   align-items: flex-end;
   gap: 4px;
   font-size: 13px;
-  color: #cfcfcf;
+  color: var(--text);
 }
 
 .mini-price {
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .mini-progress {
   font-size: 12px;
-  color: #a0a0a0;
+  color: var(--muted);
 }
 
 .mini-extra {
@@ -3494,13 +3591,70 @@ const saveNotificationSettings = async () => {
 
 .seller-card {
   background: #111111;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
+
+/* 라이트 모드: 판매자 카드 배경 */
+:global(body.theme-light) .seller-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  padding: 0 !important;
+}
+
+:global(body.theme-light) .seller-card h3,
+:global(body.theme-light) .seller-card .card-header h3 {
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .seller-card .card-subtitle {
+  color: #666666 !important;
+}
+
+/* 라이트 모드: 판매자 미니 리스트 아이템 */
+:global(body.theme-light) .seller-mini-hero {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+:global(body.theme-light) .seller-mini-hero .hero-title,
+:global(body.theme-light) .seller-mini-hero .hero-price,
+:global(body.theme-light) .seller-mini-hero .hero-progress,
+:global(body.theme-light) .seller-mini-hero .hero-updated {
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .seller-mini-hero .hero-sub {
+  color: #666666 !important;
+}
+
+:global(body.theme-light) .seller-mini-item {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  padding: 0 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+:global(body.theme-light) .seller-mini-item:last-child {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+:global(body.theme-light) .seller-mini-item .mini-title,
+:global(body.theme-light) .seller-mini-item .mini-price,
+:global(body.theme-light) .seller-mini-item .mini-progress,
+:global(body.theme-light) .seller-mini-item .mini-updated {
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .seller-mini-item .mini-sub {
+  color: #666666 !important;
+}
+
 .order-summary-card {
   grid-column: 1 / -1;
 }
@@ -3519,6 +3673,11 @@ const saveNotificationSettings = async () => {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* 라이트 모드: 주문 요약 아이템 */
+:global(body.theme-light) .order-summary-item {
+  border-bottom-color: #e2e8f0;
+}
+
 .order-summary-item:last-child {
   border-bottom: none;
 }
@@ -3531,13 +3690,13 @@ const saveNotificationSettings = async () => {
 
 .order-id {
   margin: 0;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
 }
 
 .order-date {
   margin: 0;
-  color: #a0a0a0;
+  color: var(--muted);
   font-size: 12px;
 }
 
@@ -3548,8 +3707,21 @@ const saveNotificationSettings = async () => {
 }
 
 .order-amount {
-  color: #ffffff;
+  color: var(--text);
   font-weight: 700;
+}
+
+/* 라이트 모드: 주문 관련 텍스트 */
+:global(body.theme-light) .order-id {
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .order-date {
+  color: #666666 !important;
+}
+
+:global(body.theme-light) .order-amount {
+  color: #0f172a !important;
 }
 
 .order-status {
@@ -3558,6 +3730,20 @@ const saveNotificationSettings = async () => {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
   text-transform: uppercase;
+}
+
+/* 라이트 모드: 주문 상태 */
+:global(body.theme-light) .order-status {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .order-buyer {
+  color: #666666 !important;
+}
+
+:global(body.theme-light) .order-detail {
+  color: #666666 !important;
 }
 
 .seller-orders-grid {
@@ -3578,6 +3764,18 @@ const saveNotificationSettings = async () => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
+/* 라이트 모드: 판매자 주문 카드 */
+:global(body.theme-light) .seller-order-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+}
+
+:global(body.theme-light) .seller-order-card:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
 .seller-order-card:hover {
   border-color: rgba(255, 255, 255, 0.15);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
@@ -3592,8 +3790,62 @@ const saveNotificationSettings = async () => {
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+/* 라이트 모드: 판매자 주문 헤더 */
+:global(body.theme-light) .seller-order-header {
+  border-bottom-color: #e2e8f0 !important;
+}
+
+:global(body.theme-light) .seller-order-dates {
+  color: #666666 !important;
+}
+
+:global(body.theme-light) .seller-order-title {
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .seller-order-sub {
+  color: #666666 !important;
+  background: #f1f5f9 !important;
+}
+
+:global(body.theme-light) .seller-order-price .current-price {
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .seller-order-price .original-price {
+  color: #999999 !important;
+}
+
+:global(body.theme-light) .progress-info {
+  color: #666666 !important;
+}
+
+:global(body.theme-light) .progress-bar {
+  background: #e2e8f0 !important;
+}
+
+:global(body.theme-light) .order-dropdown {
+  border-top-color: #e2e8f0 !important;
+}
+
+:global(body.theme-light) .order-dropdown-item {
+  border-bottom-color: #e2e8f0 !important;
+}
+
+:global(body.theme-light) .order-id,
+:global(body.theme-light) .order-date,
+:global(body.theme-light) .order-buyer,
+:global(body.theme-light) .order-detail,
+:global(body.theme-light) .order-amount {
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .order-status {
+  color: #0f172a !important;
+}
+
 .seller-order-dates {
-  color: #999;
+  color: var(--muted);
   font-size: 13px;
   font-weight: 500;
 }
@@ -3613,7 +3865,7 @@ const saveNotificationSettings = async () => {
 .seller-order-title {
   margin: 0;
   font-size: 20px;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 700;
   line-height: 1.3;
   letter-spacing: -0.3px;
@@ -3621,7 +3873,7 @@ const saveNotificationSettings = async () => {
 
 .seller-order-sub {
   margin: 0;
-  color: #888;
+  color: var(--muted);
   font-size: 13px;
   padding: 4px 12px;
   background: rgba(255, 255, 255, 0.05);
@@ -3641,13 +3893,13 @@ const saveNotificationSettings = async () => {
 .seller-order-price .current-price {
   font-size: 24px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   letter-spacing: -0.5px;
 }
 
 .seller-order-price .original-price {
   font-size: 16px;
-  color: #666666;
+  color: var(--muted);
   text-decoration: line-through;
 }
 
@@ -3664,7 +3916,7 @@ const saveNotificationSettings = async () => {
   align-items: center;
   font-size: 14px;
   font-weight: 600;
-  color: #a0a0a0;
+  color: var(--muted);
 }
 
 .progress-bar {
@@ -3706,7 +3958,7 @@ const saveNotificationSettings = async () => {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  color: var(--text);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -3718,7 +3970,7 @@ const saveNotificationSettings = async () => {
 
 .status-badge.closed {
   background: linear-gradient(135deg, rgba(158, 158, 158, 0.2) 0%, rgba(117, 117, 117, 0.2) 100%);
-  color: #999;
+  color: var(--muted);
   border-color: rgba(158, 158, 158, 0.3);
 }
 
@@ -3760,13 +4012,13 @@ const saveNotificationSettings = async () => {
 
 .order-buyer {
   margin: 0;
-  color: #c0c0c0;
+  color: var(--muted);
   font-size: 13px;
 }
 
 .order-detail {
   margin: 0;
-  color: #999;
+  color: var(--muted);
   font-size: 12px;
   font-weight: 500;
 }
@@ -3789,7 +4041,7 @@ const saveNotificationSettings = async () => {
 
 .card-subtitle {
   font-size: 13px;
-  color: #8a8a8a;
+  color: var(--muted);
   margin: 0 0 4px 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -3798,7 +4050,16 @@ const saveNotificationSettings = async () => {
 .card-header h3 {
   margin: 0;
   font-size: 20px;
-  color: #ffffff;
+  color: var(--text);
+}
+
+/* 라이트 모드: 카드 헤더 스타일 */
+:global(body.theme-light) .card-header h3 {
+  color: #0f172a;
+}
+
+:global(body.theme-light) .card-subtitle {
+  color: #666666;
 }
 
 .link-button {
@@ -3808,6 +4069,11 @@ const saveNotificationSettings = async () => {
   font-size: 14px;
   cursor: pointer;
   padding: 0;
+}
+
+/* 라이트 모드: 링크 버튼 */
+:global(body.theme-light) .link-button {
+  color: #339af0;
 }
 
 .info-list {
@@ -3825,7 +4091,7 @@ const saveNotificationSettings = async () => {
 }
 
 .info-row dt {
-  color: #888;
+  color: var(--muted);
   font-weight: 500;
 }
 
@@ -3835,14 +4101,27 @@ const saveNotificationSettings = async () => {
   font-weight: 600;
 }
 
+/* 라이트 모드: 정보 행 스타일 */
+:global(body.theme-light) .info-row {
+  border-bottom-color: #e2e8f0;
+}
+
+:global(body.theme-light) .info-row dt {
+  color: #666666;
+}
+
+:global(body.theme-light) .info-row dd {
+  color: #0f172a;
+}
+
 .empty-state,
 .empty-state-lg {
-  background: #0a0a0a;
-  border: 1px dashed #2a2a2a;
+  background: var(--bg);
+  border: 1px dashed var(--border);
   border-radius: 12px;
   padding: 24px;
   text-align: center;
-  color: #aaaaaa;
+  color: var(--muted);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -3858,7 +4137,7 @@ const saveNotificationSettings = async () => {
   padding: 12px;
   background: rgba(255, 255, 255, 0.03);
   border-radius: 12px;
-  color: #c5c5c5;
+  color: var(--muted);
   font-size: 14px;
   line-height: 1.4;
   border: 1px dashed rgba(255, 255, 255, 0.08);
@@ -3881,7 +4160,7 @@ const saveNotificationSettings = async () => {
 }
 
 .inquiry-list li {
-  background: #0f0f0f;
+  background: var(--bg);
   border-radius: 12px;
   padding: 16px;
   border: 1px solid rgba(255, 255, 255, 0.04);
@@ -3893,8 +4172,22 @@ const saveNotificationSettings = async () => {
 }
 
 .answer {
-  color: #bbbbbb;
+  color: var(--muted);
   margin: 0 0 8px 0;
+}
+
+/* 라이트 모드: 고객 문의 리스트 */
+:global(body.theme-light) .inquiry-list li {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+:global(body.theme-light) .question {
+  color: #0f172a;
+}
+
+:global(body.theme-light) .answer {
+  color: #666666;
 }
 
 .status {
@@ -3904,7 +4197,7 @@ const saveNotificationSettings = async () => {
 }
 
 .notice-item {
-  background: #0f0f0f;
+  background: var(--bg);
   border-radius: 12px;
   padding: 16px;
   border: 1px solid rgba(255, 255, 255, 0.04);
@@ -3915,7 +4208,7 @@ const saveNotificationSettings = async () => {
   justify-content: space-between;
   margin-bottom: 8px;
   font-size: 13px;
-  color: #a0a0a0;
+  color: var(--muted);
 }
 
 .badge {
@@ -3928,7 +4221,7 @@ const saveNotificationSettings = async () => {
 
 .notice-title {
   margin: 0;
-  color: #ffffff;
+  color: var(--text);
   font-size: 16px;
   font-weight: 600;
 }
@@ -3947,10 +4240,10 @@ const saveNotificationSettings = async () => {
 .section-title {
   font-size: 24px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin: 0 0 24px 0;
   padding-bottom: 16px;
-  border-bottom: 2px solid #2a2a2a;
+  border-bottom: 2px solid var(--border);
 }
 
 /* 포인트 섹션 */
@@ -3962,20 +4255,20 @@ const saveNotificationSettings = async () => {
 .point-balance h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #999;
+  color: var(--muted);
   margin: 0 0 16px 0;
 }
 
 .balance-amount {
   font-size: 48px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin: 0 0 32px 0;
 }
 
 .points-info {
   font-size: 14px;
-  color: #999;
+  color: var(--muted);
   margin: 0 0 24px 0;
 }
 
@@ -3990,9 +4283,9 @@ const saveNotificationSettings = async () => {
   flex: 1;
   padding: 12px 24px;
   background: transparent;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #999;
+  color: var(--muted);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -4000,14 +4293,14 @@ const saveNotificationSettings = async () => {
 }
 
 .point-history-tabs .tab-btn:hover {
-  background: #1a1a1a;
-  border-color: #3a3a3a;
+  background: var(--surface);
+  border-color: var(--border-strong);
 }
 
 .point-history-tabs .tab-btn.active {
   background: #ffffff;
   color: #0a0a0a;
-  border-color: #ffffff;
+  border-color: var(--text);
 }
 
 .history-list {
@@ -4042,7 +4335,7 @@ const saveNotificationSettings = async () => {
 .point-empty-state .empty-description {
   margin: 0;
   font-size: 14px;
-  color: #999;
+  color: var(--muted);
   line-height: 1.5;
 }
 
@@ -4062,14 +4355,14 @@ const saveNotificationSettings = async () => {
 .balance-label {
   margin: 0;
   font-size: 14px;
-  color: #999;
+  color: var(--muted);
 }
 
 .balance-amount {
   margin: 0;
   font-size: 36px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .settlement-history-item {
@@ -4077,8 +4370,8 @@ const saveNotificationSettings = async () => {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
 }
 
@@ -4090,7 +4383,7 @@ const saveNotificationSettings = async () => {
 
 .settlement-history-item .history-status {
   font-size: 12px;
-  color: #999;
+  color: var(--muted);
 }
 
 /* PG 결제 내역 스타일 */
@@ -4105,15 +4398,15 @@ const saveNotificationSettings = async () => {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
   transition: all 0.2s;
 }
 
 .payment-item:hover {
-  border-color: #3a3a3a;
-  background: #1a1a1a;
+  border-color: var(--border-strong);
+  background: var(--surface);
 }
 
 .payment-info {
@@ -4124,19 +4417,19 @@ const saveNotificationSettings = async () => {
 
 .payment-date {
   font-size: 12px;
-  color: #888;
+  color: var(--muted);
   font-weight: 500;
 }
 
 .payment-method {
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
 }
 
 .payment-amount {
   font-size: 18px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .payment-status {
@@ -4171,8 +4464,8 @@ const saveNotificationSettings = async () => {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
 }
 
@@ -4184,7 +4477,7 @@ const saveNotificationSettings = async () => {
 
 .history-date {
   font-size: 12px;
-  color: #888;
+  color: var(--muted);
   font-weight: 500;
   letter-spacing: 0.02em;
 }
@@ -4192,7 +4485,7 @@ const saveNotificationSettings = async () => {
 .history-amount {
   font-size: 18px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .history-amount.credit {
@@ -4225,13 +4518,13 @@ const saveNotificationSettings = async () => {
 .loading-state {
   text-align: center;
   padding: 40px 20px;
-  color: #999;
+  color: var(--muted);
 }
 
 /* 포인트 충전 모달 */
 .point-charge-modal {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   width: 90%;
   max-width: 420px;
@@ -4264,9 +4557,9 @@ const saveNotificationSettings = async () => {
 
 .point-charge-modal input {
   width: 100%;
-  background: #0f0f0f;
-  color: #ffffff;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 12px;
   font-size: 15px;
@@ -4274,8 +4567,8 @@ const saveNotificationSettings = async () => {
 
 .point-charge-modal input:focus {
   outline: none;
-  border-color: #ffffff;
-  background: #151515;
+  border-color: var(--text);
+  background: var(--hover);
 }
 
 .input-hint {
@@ -4302,7 +4595,7 @@ const saveNotificationSettings = async () => {
 
 .address-header p {
   font-size: 14px;
-  color: #999;
+  color: var(--muted);
   margin: 0;
 }
 
@@ -4314,11 +4607,26 @@ const saveNotificationSettings = async () => {
 }
 
 .panel {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* 라이트 모드: 패널 배경 및 스타일 개선 */
+:global(body.theme-light) .panel {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+:global(body.theme-light) .panel h3 {
+  color: #0f172a;
+}
+
+:global(body.theme-light) .panel-header {
+  border-bottom-color: #e2e8f0;
 }
 
 .panel + .panel {
@@ -4329,7 +4637,7 @@ const saveNotificationSettings = async () => {
   font-size: 20px;
   font-weight: 700;
   margin: 0;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .panel-header {
@@ -4338,7 +4646,7 @@ const saveNotificationSettings = async () => {
   align-items: center;
   margin-bottom: 20px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--border);
 }
 
 .row {
@@ -4349,15 +4657,15 @@ const saveNotificationSettings = async () => {
 
 .row label {
   font-weight: 600;
-  color: #e0e0e0;
+  color: var(--text);
   font-size: 14px;
 }
 
 input,
 textarea {
-  background: #0f0f0f;
-  color: #ffffff;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
   font-size: 14px;
@@ -4365,14 +4673,14 @@ textarea {
 
 input::placeholder,
 textarea::placeholder {
-  color: #666;
+  color: var(--muted);
 }
 
 input:focus,
 textarea:focus {
   outline: none;
-  border-color: #ffffff;
-  background: #151515;
+  border-color: var(--text);
+  background: var(--surface);
 }
 
 .chips {
@@ -4417,19 +4725,20 @@ textarea:focus {
 }
 
 .btn-primary {
-  background: #ffffff;
-  color: #0a0a0a;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border: 1px solid var(--border);
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
-  background: #f0f0f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: var(--btn-primary-hover);
 }
 
 .btn-danger {
   background: #ff4757;
-  color: #ffffff;
+  color: var(--text);
   border: 1px solid #ff4757;
 }
 
@@ -4448,8 +4757,8 @@ textarea:focus {
 }
 
 .stat-card {
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 20px;
   display: flex;
@@ -4459,18 +4768,18 @@ textarea:focus {
 
 .stat-label {
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
   font-weight: 500;
 }
 
 .stat-value {
   font-size: 24px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .stat-value.highlight {
-  color: #ffffff;
+  color: var(--text);
 }
 
 .settlement-list {
@@ -4484,8 +4793,8 @@ textarea:focus {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
 }
 
@@ -4497,13 +4806,13 @@ textarea:focus {
 
 .settlement-date {
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
 }
 
 .settlement-amount {
   font-size: 18px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .settlement-status {
@@ -4514,12 +4823,12 @@ textarea:focus {
 }
 
 .settlement-status.completed {
-  background: #2a2a2a;
+  background: var(--hover);
   color: #51cf66;
 }
 
 .settlement-status.pending {
-  background: #2a2a2a;
+  background: var(--hover);
   color: #ffd43b;
 }
 
@@ -4530,8 +4839,8 @@ textarea:focus {
 }
 
 .stat-box {
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 20px;
   text-align: center;
@@ -4542,14 +4851,14 @@ textarea:focus {
 
 .stat-box .stat-label {
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
   font-weight: 500;
 }
 
 .stat-box .stat-number {
   font-size: 24px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 /* 사용자 정보 섹션 */
@@ -4564,7 +4873,7 @@ textarea:focus {
   justify-content: space-between;
   align-items: center;
   padding-bottom: 12px;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--border);
 }
 
 .info-row:last-of-type {
@@ -4573,17 +4882,17 @@ textarea:focus {
 
 .info-label {
   font-weight: 600;
-  color: #e0e0e0;
+  color: var(--muted);
   font-size: 14px;
 }
 
 .info-value {
-  color: #ffffff;
+  color: var(--text);
   font-size: 14px;
 }
 
 .info-value.readonly {
-  color: #999;
+  color: var(--muted);
 }
 
 .point-info {
@@ -4594,14 +4903,14 @@ textarea:focus {
 
 .point-value {
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .btn-point-charge {
   padding: 8px 16px;
-  background: #ffffff;
-  color: #0a0a0a;
-  border: none;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
@@ -4628,7 +4937,7 @@ textarea:focus {
   height: 60px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #2a2a2a;
+  border: 2px solid var(--border);
 }
 
 
@@ -4657,15 +4966,15 @@ textarea:focus {
 
 
 .no-image {
-  color: #999;
+  color: var(--muted);
   font-size: 13px;
 }
 
 .btn-address-manage {
   padding: 8px 16px;
   background: transparent;
-  border: 1px solid #4a4a4a;
-  color: #ffffff;
+  border: 1px solid var(--border-strong);
+  color: var(--text);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
@@ -4674,8 +4983,8 @@ textarea:focus {
 }
 
 .btn-address-manage:hover {
-  background: #2a2a2a;
-  border-color: #666;
+  background: var(--hover);
+  border-color: var(--muted);
 }
 
 /* 프로필 수정 폼 */
@@ -4699,19 +5008,19 @@ textarea:focus {
 
 .profile-edit-form .form-group input {
   padding: 12px 16px;
-  background: #0f0f0f;
-  border: 2px solid #2a2a2a;
+  background: var(--bg);
+  border: 2px solid var(--border);
   border-radius: 12px;
   font-size: 15px;
-  color: #ffffff;
+  color: var(--text);
   transition: border-color 0.2s;
   font-family: inherit;
 }
 
 .profile-edit-form .form-group input:focus {
   outline: none;
-  border-color: #ffffff;
-  background: #151515;
+  border-color: var(--text);
+  background: var(--hover);
 }
 
 .profile-edit-form .info-row {
@@ -4771,7 +5080,7 @@ textarea:focus {
 }
 
 .empty-orders p {
-  color: #999;
+  color: var(--muted);
   margin-bottom: 16px;
 }
 
@@ -4782,10 +5091,16 @@ textarea:focus {
 }
 
 .order-item {
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
-  background: #0f0f0f;
+  background: var(--bg);
+}
+
+/* 라이트 모드: 주문 아이템 배경 개선 */
+:global(body.theme-light) .order-item {
+  background: #ffffff;
+  border-color: #e2e8f0;
 }
 
 .order-header {
@@ -4797,14 +5112,19 @@ textarea:focus {
   border-bottom: 1px solid #2a2a2a;
 }
 
+/* 라이트 모드: 주문 헤더 구분선 */
+:global(body.theme-light) .order-header {
+  border-bottom-color: #e2e8f0;
+}
+
 .order-date {
-  color: #999;
+  color: var(--muted);
   font-size: 13px;
   margin-right: 12px;
 }
 
 .order-number {
-  color: #999;
+  color: var(--muted);
   font-size: 13px;
 }
 
@@ -4835,22 +5155,22 @@ textarea:focus {
 }
 
 .order-status.completed {
-  background: #2a2a2a;
+  background: var(--hover);
   color: #51cf66;
 }
 
 .order-status.payment_completed {
-  background: #2a2a2a;
+  background: var(--hover);
   color: #74c0fc;
 }
 
 .order-status.shipping {
-  background: #2a2a2a;
+  background: var(--hover);
   color: #74c0fc;
 }
 
 .order-status.pending {
-  background: #2a2a2a;
+  background: var(--hover);
   color: #ffd43b;
 }
 
@@ -4875,8 +5195,14 @@ textarea:focus {
 .order-status.cancelled,
 .order-status.refunded {
   background: rgba(150, 150, 150, 0.2);
-  color: #999;
+  color: var(--muted);
   border: 1px solid #666;
+}
+
+.order-status.expired {
+  background: rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+  border: 1px solid #94a3b8;
 }
 
 .order-products {
@@ -4898,7 +5224,7 @@ textarea:focus {
   gap: 8px;
   margin-bottom: 12px;
   padding: 12px;
-  background: #0f0f0f;
+  background: var(--bg);
   border-radius: 8px;
 }
 
@@ -4918,7 +5244,7 @@ textarea:focus {
 .order-quantity,
 .order-price {
   margin: 0;
-  color: #ffffff;
+  color: var(--text);
   font-size: 14px;
   text-align: right;
 }
@@ -4937,14 +5263,14 @@ textarea:focus {
 }
 
 .product-details h4 {
-  color: #ffffff;
+  color: var(--text);
   font-size: 15px;
   font-weight: 600;
   margin: 0 0 4px;
 }
 
 .product-option {
-  color: #999;
+  color: var(--muted);
   font-size: 13px;
   margin: 0 0 8px;
 }
@@ -4954,11 +5280,11 @@ textarea:focus {
   justify-content: space-between;
   align-items: center;
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
 }
 
 .product-price {
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
 }
 
@@ -4971,7 +5297,7 @@ textarea:focus {
 }
 
 .order-total {
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
   font-size: 15px;
 }
@@ -5075,8 +5401,8 @@ textarea:focus {
 
 .address-modal,
 .address-edit-modal {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 24px;
   padding: 32px;
   max-width: 700px;
@@ -5098,14 +5424,30 @@ textarea:focus {
 .modal-header h2 {
   font-size: 24px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin: 0;
+}
+
+/* 라이트 모드: 주소 모달 스타일 */
+:global(body.theme-light) .address-modal,
+:global(body.theme-light) .address-edit-modal {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+:global(body.theme-light) .modal-header {
+  border-bottom-color: #e2e8f0;
+}
+
+:global(body.theme-light) .modal-header h2 {
+  color: #0f172a;
 }
 
 .close-btn {
   background: transparent;
   border: none;
-  color: #ffffff;
+  color: var(--text);
   font-size: 28px;
   cursor: pointer;
   padding: 0;
@@ -5119,7 +5461,16 @@ textarea:focus {
 }
 
 .close-btn:hover {
-  background: #2a2a2a;
+  background: var(--hover);
+}
+
+/* 라이트 모드: 닫기 버튼 */
+:global(body.theme-light) .close-btn {
+  color: #0f172a;
+}
+
+:global(body.theme-light) .close-btn:hover {
+  background: #f1f5f9;
 }
 
 .address-list-container {
@@ -5130,7 +5481,7 @@ textarea:focus {
 .empty-state {
   text-align: center;
   padding: 40px 20px;
-  color: #999;
+  color: var(--muted);
 }
 
 .empty-state p {
@@ -5144,16 +5495,16 @@ textarea:focus {
 }
 
 .address-item {
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 20px;
   transition: all 0.2s;
 }
 
 .address-item:hover {
-  border-color: #3a3a3a;
-  background: #151515;
+  border-color: var(--border-strong);
+  background: var(--hover);
 }
 
 .address-content {
@@ -5179,12 +5530,12 @@ textarea:focus {
 
 .receiver-name {
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text);
   font-size: 16px;
 }
 
 .phone-number {
-  color: #999;
+  color: var(--muted);
   font-size: 14px;
 }
 
@@ -5196,7 +5547,7 @@ textarea:focus {
 }
 
 .postal-code {
-  color: #999;
+  color: var(--muted);
   font-weight: 500;
 }
 
@@ -5218,13 +5569,14 @@ textarea:focus {
 }
 
 .add-address-section .btn-primary {
-  background: #ffffff;
-  color: #0a0a0a;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border: 1px solid var(--border);
 }
 
 .add-address-section .btn-primary:hover {
-  background: #f0f0f0;
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+  background: var(--btn-primary-hover);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .pagination {
@@ -5240,8 +5592,8 @@ textarea:focus {
 .page-btn {
   padding: 8px 16px;
   background: transparent;
-  border: 1px solid #4a4a4a;
-  color: #ffffff;
+  border: 1px solid var(--border-strong);
+  color: var(--text);
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
@@ -5250,8 +5602,8 @@ textarea:focus {
 }
 
 .page-btn:hover:not(:disabled) {
-  background: #2a2a2a;
-  border-color: #666;
+  background: var(--hover);
+  border-color: var(--muted);
 }
 
 .page-btn:disabled {
@@ -5260,7 +5612,7 @@ textarea:focus {
 }
 
 .page-info {
-  color: #999;
+  color: var(--muted);
   font-size: 14px;
 }
 
@@ -5285,19 +5637,35 @@ textarea:focus {
 
 .address-form .form-group input {
   padding: 12px 16px;
-  background: #0f0f0f;
-  border: 2px solid #2a2a2a;
+  background: var(--bg);
+  border: 2px solid var(--border);
   border-radius: 12px;
   font-size: 15px;
-  color: #ffffff;
+  color: var(--text);
   transition: border-color 0.2s;
   font-family: inherit;
 }
 
 .address-form .form-group input:focus {
   outline: none;
-  border-color: #ffffff;
-  background: #151515;
+  border-color: var(--text);
+  background: var(--hover);
+}
+
+/* 라이트 모드: 주소 폼 스타일 */
+:global(body.theme-light) .address-form .form-group label {
+  color: #0f172a;
+}
+
+:global(body.theme-light) .address-form .form-group input {
+  background: #ffffff;
+  border-color: #d0d0d6;
+  color: #0f172a;
+}
+
+:global(body.theme-light) .address-form .form-group input:focus {
+  border-color: #0f172a;
+  background: #ffffff;
 }
 
 .postal-code-group {
@@ -5312,8 +5680,8 @@ textarea:focus {
 .btn-search-postal {
   padding: 12px 16px;
   background: transparent;
-  border: 1px solid #4a4a4a;
-  color: #ffffff;
+  border: 1px solid var(--border-strong);
+  color: var(--text);
   border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
@@ -5323,8 +5691,8 @@ textarea:focus {
 }
 
 .btn-search-postal:hover {
-  background: #2a2a2a;
-  border-color: #666;
+  background: var(--hover);
+  border-color: var(--muted);
 }
 
 .form-actions {
@@ -5334,6 +5702,42 @@ textarea:focus {
   margin-top: 24px;
   padding-top: 20px;
   border-top: 1px solid #2a2a2a;
+}
+
+/* 라이트 모드: 우편번호 검색 버튼 및 폼 액션 */
+:global(body.theme-light) .btn-search-postal {
+  border-color: #d0d0d6;
+  color: #0f172a;
+}
+
+:global(body.theme-light) .btn-search-postal:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+:global(body.theme-light) .form-actions {
+  border-top-color: #e2e8f0;
+}
+
+:global(body.theme-light) .form-actions .btn-outline {
+  border-color: #d0d0d6;
+  color: #0f172a;
+}
+
+:global(body.theme-light) .form-actions .btn-outline:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+:global(body.theme-light) .form-actions .btn-primary {
+  background: #51cf66;
+  color: #ffffff;
+  border-color: #51cf66;
+}
+
+:global(body.theme-light) .form-actions .btn-primary:hover:not(:disabled) {
+  background: #69db7c;
+  border-color: #69db7c;
 }
 
 .form-actions .btn {
@@ -5347,23 +5751,24 @@ textarea:focus {
 
 .form-actions .btn-outline {
   background: transparent;
-  border: 1px solid #4a4a4a;
-  color: #ffffff;
+  border: 1px solid var(--border-strong);
+  color: var(--text);
 }
 
 .form-actions .btn-outline:hover {
-  background: #2a2a2a;
-  border-color: #666;
+  background: var(--hover);
+  border-color: var(--muted);
 }
 
 .form-actions .btn-primary {
-  background: #ffffff;
-  color: #0a0a0a;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border: 1px solid var(--border);
 }
 
 .form-actions .btn-primary:hover:not(:disabled) {
-  background: #f0f0f0;
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+  background: var(--btn-primary-hover);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .form-actions .btn-primary:disabled {
@@ -5373,8 +5778,8 @@ textarea:focus {
 
 /* 주문상세 */
 .order-detail-section {
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 20px;
   margin-bottom: 16px;
@@ -5393,7 +5798,7 @@ textarea:focus {
 
   background: transparent;
   border: 1px solid rgba(255,255,255,0.25);
-  color: #ffffff;
+  color: var(--text);
 
   cursor: pointer;
   transition: all 0.2s ease;
@@ -5401,7 +5806,7 @@ textarea:focus {
 
 .link-btn:hover {
   background: rgba(255,255,255,0.1);
-  border-color: #ffffff;
+  border-color: var(--text);
 }
 
 .order-detail-col {
@@ -5414,8 +5819,8 @@ textarea:focus {
   font-size: 15px;
   font-weight: 700;
   margin-bottom: 14px;
-  color: #ffffff;
-  border-left: 4px solid #ffffff;
+  color: var(--text);
+  border-left: 4px solid var(--text);
   padding-left: 10px;
 }
 
@@ -5439,13 +5844,13 @@ textarea:focus {
 
 .label {
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
   min-width: 90px;
 }
 
 .value {
   font-size: 14px;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 500;
   text-align: right;
   word-break: break-all;
@@ -5463,7 +5868,7 @@ textarea:focus {
 .value.badge {
   padding: 4px 10px;
   border-radius: 12px;
-  background: #2a2a2a;
+  background: var(--hover);
   font-size: 12px;
 }
 
@@ -5476,7 +5881,7 @@ textarea:focus {
 .value.highlight {
   font-size: 16px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
 }
 
 /* 계정 설정 */
@@ -5500,7 +5905,7 @@ textarea:focus {
 .password-label {
   font-size: 13px;
   font-weight: 500;
-  color: #999;
+  color: var(--muted);
   letter-spacing: -0.2px;
 }
 
@@ -5508,9 +5913,9 @@ textarea:focus {
   width: 100%;
   padding: 14px 16px;
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  color: #ffffff;
+  color: var(--text);
   font-size: 14px;
   transition: all 0.2s ease;
 }
@@ -5576,7 +5981,7 @@ textarea:focus {
 
 .danger-description {
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
   margin: 0;
   line-height: 1.6;
 }
@@ -5607,8 +6012,8 @@ textarea:focus {
 
 /* 회원 탈퇴 모달 */
 .delete-account-modal {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 0;
   max-width: 480px;
@@ -5638,7 +6043,7 @@ textarea:focus {
   border-radius: 8px;
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  color: var(--text);
   font-size: 20px;
   cursor: pointer;
   display: flex;
@@ -5699,14 +6104,14 @@ textarea:focus {
   align-items: center;
   padding: 20px;
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border);
   border-radius: 12px;
   transition: all 0.2s ease;
 }
 
 .notification-setting-item:hover {
   background: rgba(255, 255, 255, 0.05);
-  border-color: #3a3a3a;
+  border-color: var(--border-strong);
 }
 
 .setting-info {
@@ -5735,13 +6140,13 @@ textarea:focus {
 .setting-title {
   font-size: 15px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text);
   margin: 0 0 4px 0;
 }
 
 .setting-description {
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
   margin: 0;
   line-height: 1.5;
 }
@@ -5792,7 +6197,7 @@ textarea:focus {
   width: 20px;
   left: 4px;
   bottom: 4px;
-  background-color: #ffffff;
+  background-color: var(--text);
   transition: 0.3s;
   border-radius: 50%;
 }
@@ -5909,5 +6314,152 @@ textarea:focus {
   .notification-save-footer .btn {
     width: 100%;
   }
+}
+
+/* 라이트 모드: 판매자 센터 카드 강제 적용 */
+body.theme-light .seller-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-light .seller-card h3,
+body.theme-light .seller-card .card-header h3,
+body.theme-light .seller-card .info-row label,
+body.theme-light .seller-card .info-row span {
+  color: #0f172a !important;
+}
+
+body.theme-light .seller-card .card-subtitle,
+body.theme-light .seller-card .info-row .label {
+  color: #666666 !important;
+}
+
+body.theme-light .seller-card .info-row {
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-light .seller-card input {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-light .seller-card .inquiry-item {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-light .seller-card .inquiry-item .question,
+body.theme-light .seller-card .inquiry-item .answer {
+  color: #0f172a !important;
+}
+
+/* 라이트 모드: 판매자 미니 리스트 아이템 강제 적용 */
+body.theme-light .seller-mini-hero {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+body.theme-light .seller-mini-hero .hero-title,
+body.theme-light .seller-mini-hero .hero-price,
+body.theme-light .seller-mini-hero .hero-progress,
+body.theme-light .seller-mini-hero .hero-updated {
+  color: #0f172a !important;
+}
+
+body.theme-light .seller-mini-hero .hero-sub {
+  color: #666666 !important;
+}
+
+body.theme-light .seller-mini-item {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  padding: 16px !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.theme-light .seller-mini-item:last-child {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+body.theme-light .seller-mini-item .mini-title,
+body.theme-light .seller-mini-item .mini-price,
+body.theme-light .seller-mini-item .mini-progress,
+body.theme-light .seller-mini-item .mini-updated {
+  color: #0f172a !important;
+}
+
+body.theme-light .seller-mini-item .mini-sub {
+  color: #666666 !important;
+}
+
+/* 라이트 모드: 주문 현황 카드 강제 적용 */
+body.theme-light .seller-order-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+}
+
+body.theme-light .seller-order-card:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+body.theme-light .seller-order-header {
+  border-bottom-color: #e2e8f0 !important;
+}
+
+body.theme-light .seller-order-dates {
+  color: #666666 !important;
+}
+
+body.theme-light .seller-order-title {
+  color: #0f172a !important;
+}
+
+body.theme-light .seller-order-sub {
+  color: #666666 !important;
+  background: #f1f5f9 !important;
+}
+
+body.theme-light .seller-order-price .current-price {
+  color: #0f172a !important;
+}
+
+body.theme-light .seller-order-price .original-price {
+  color: #999999 !important;
+}
+
+body.theme-light .progress-info {
+  color: #666666 !important;
+}
+
+body.theme-light .progress-bar {
+  background: #e2e8f0 !important;
+}
+
+body.theme-light .order-dropdown {
+  border-top-color: #e2e8f0 !important;
+}
+
+body.theme-light .order-dropdown-item {
+  border-bottom-color: #e2e8f0 !important;
+}
+
+body.theme-light .order-id,
+body.theme-light .order-amount {
+  color: #0f172a !important;
+}
+
+body.theme-light .order-date,
+body.theme-light .order-buyer,
+body.theme-light .order-detail {
+  color: #666666 !important;
+}
+
+body.theme-light .order-status {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
 }
 </style>

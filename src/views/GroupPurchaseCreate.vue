@@ -655,7 +655,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .group-purchase-create-page {
-  background: #0a0a0a;
+  background: var(--bg);
   min-height: 100vh;
   padding: 32px 0 60px;
 }
@@ -673,12 +673,12 @@ onBeforeUnmount(() => {
 .page-header h1 {
   font-size: 32px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin-bottom: 8px;
 }
 
 .page-header p {
-  color: #999;
+  color: var(--muted);
   font-size: 15px;
 }
 
@@ -689,8 +689,8 @@ onBeforeUnmount(() => {
 }
 
 .form-section {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px;
   display: flex;
@@ -701,7 +701,7 @@ onBeforeUnmount(() => {
 .form-section h3 {
   font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text);
   margin-bottom: 8px;
 }
 
@@ -727,11 +727,11 @@ onBeforeUnmount(() => {
 .form-group select,
 .form-group textarea {
   padding: 14px 16px;
-  background: #0f0f0f;
-  border: 2px solid #2a2a2a;
+  background: var(--bg);
+  border: 2px solid var(--border);
   border-radius: 12px;
   font-size: 15px;
-  color: #ffffff;
+  color: var(--text);
   transition: border-color 0.2s;
 }
 
@@ -745,9 +745,9 @@ onBeforeUnmount(() => {
   min-height: 220px;
   padding: 14px 16px;
   border-radius: 12px;
-  border: 2px solid #2a2a2a;
-  background: #0f0f0f;
-  color: #ffffff;
+  border: 2px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
   line-height: 1.8;
   overflow-y: auto;
 }
@@ -786,14 +786,14 @@ onBeforeUnmount(() => {
 
 .form-group input::placeholder,
 .form-group textarea::placeholder {
-  color: #666;
+  color: var(--muted);
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #ffffff;
+  border-color: var(--text);
   background: #151515;
 }
 
@@ -809,11 +809,11 @@ onBeforeUnmount(() => {
 
 .time-period-select {
   padding: 14px 16px;
-  background: #0f0f0f;
-  border: 2px solid #2a2a2a;
+  background: var(--bg);
+  border: 2px solid var(--border);
   border-radius: 12px;
   font-size: 15px;
-  color: #ffffff;
+  color: var(--text);
   transition: border-color 0.2s;
   cursor: pointer;
   min-width: 80px;
@@ -821,37 +821,37 @@ onBeforeUnmount(() => {
 
 .time-period-select:focus {
   outline: none;
-  border-color: #ffffff;
+  border-color: var(--text);
   background: #151515;
 }
 
 .time-input {
   flex: 1;
   padding: 14px 16px;
-  background: #0f0f0f;
-  border: 2px solid #2a2a2a;
+  background: var(--bg);
+  border: 2px solid var(--border);
   border-radius: 12px;
   font-size: 15px;
-  color: #ffffff;
+  color: var(--text);
   transition: border-color 0.2s;
   cursor: pointer;
 }
 
 .time-input:focus {
   outline: none;
-  border-color: #ffffff;
+  border-color: var(--text);
   background: #151515;
 }
 
 .form-hint {
   font-size: 12px;
-  color: #666;
+  color: var(--muted);
   margin-top: 4px;
 }
 
 .selected-product-info {
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
   display: flex;
@@ -867,13 +867,13 @@ onBeforeUnmount(() => {
 
 .info-label {
   font-size: 13px;
-  color: #999;
+  color: var(--muted);
   font-weight: 500;
 }
 
 .info-value {
   font-size: 14px;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
 }
 
@@ -890,9 +890,9 @@ onBeforeUnmount(() => {
 
 .discount-info {
   padding: 12px;
-  background: #0f0f0f;
+  background: var(--bg);
   border-radius: 8px;
-  color: #ffffff;
+  color: var(--text);
   font-weight: 600;
   display: flex;
   gap: 16px;
@@ -922,8 +922,8 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: #0f0f0f;
-  border: 1px solid #2a2a2a;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 12px;
 }
@@ -937,7 +937,7 @@ onBeforeUnmount(() => {
 
 .upload-status {
   margin-top: 12px;
-  color: #999;
+  color: var(--muted);
   font-size: 13px;
 }
 
@@ -960,11 +960,11 @@ onBeforeUnmount(() => {
 .btn-outline {
   background: transparent;
   border: 1px solid #3a3a3a;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .btn-outline:hover {
-  background: #2a2a2a;
+  background: var(--hover);
   border-color: #4a4a4a;
 }
 
