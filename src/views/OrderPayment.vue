@@ -8,10 +8,6 @@
 
       <section class="form-section">
         <div class="summary-row">
-          <span>주문번호</span>
-          <strong>{{ orderNumber || orderId || '-' }}</strong>
-        </div>
-        <div class="summary-row">
           <span>결제 금액</span>
           <strong>₩{{ amount.toLocaleString() }}</strong>
         </div>
@@ -152,7 +148,11 @@ let statusPollingInterval = null
 const isCheckingStatus = ref(false)
 const pendingOrderKey = 'pending_order_payment_id'
 
-const orderId = computed(() => route.query.orderId || '')
+const orderId = computed(() => {
+  const id = route.query.orderId || ''
+  // orderId가 문자열이고 콤마가 포함된 경우 첫 번째 값만 사용
+  return typeof id === 'string' && id.includes(',') ? id.split(',')[0].trim() : id
+})
 const orderNumber = ref('')
 const amount = computed(() => {
   const value = Number(route.query.amount || 0)
@@ -268,8 +268,8 @@ const handlePay = async () => {
           orderId: orderId.value,
           orderName: groupPurchaseName.value,
           customerName: localStorage.getItem('user_name') || '사용자',
-        successUrl: `${window.location.origin}/success?orderId=${orderId.value}`,
-        failUrl: `${window.location.origin}/fail?orderId=${orderId.value}&amount=${amount.value}`
+        successUrl: `${window.location.origin}/success?amount=${amount.value}`,
+        failUrl: `${window.location.origin}/fail?amount=${amount.value}`
         })
       } catch (paymentError) {
         // 결제 창이 닫혔거나 취소된 경우 fail URL로 리다이렉트

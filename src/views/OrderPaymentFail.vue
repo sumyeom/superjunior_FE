@@ -17,7 +17,13 @@ const route = useRoute()
 const router = useRouter()
 
 onMounted(async () => {
-  const orderId = route.query.orderId || sessionStorage.getItem('pending_order_payment_id') || ''
+  // route.query.orderId가 배열이거나 중복된 경우 첫 번째 값만 사용
+  let orderId = route.query.orderId || sessionStorage.getItem('pending_order_payment_id') || ''
+  if (Array.isArray(orderId)) {
+    orderId = orderId[0]
+  } else if (typeof orderId === 'string' && orderId.includes(',')) {
+    orderId = orderId.split(',')[0].trim()
+  }
   const amount = Number(route.query.amount) || 0
   const paymentKey = route.query.paymentKey || route.query.payment_key || ''
   const errorCode = route.query.code || route.query.errorCode || route.query.error_code || ''
@@ -43,7 +49,13 @@ onMounted(async () => {
 })
 
 const goBack = () => {
-  const orderId = route.query.orderId || ''
+  // route.query.orderId가 배열이거나 중복된 경우 첫 번째 값만 사용
+  let orderId = route.query.orderId || ''
+  if (Array.isArray(orderId)) {
+    orderId = orderId[0]
+  } else if (typeof orderId === 'string' && orderId.includes(',')) {
+    orderId = orderId.split(',')[0].trim()
+  }
   const amount = route.query.amount || 0
   router.replace({ name: 'order-payment', query: { orderId, amount } })
 }

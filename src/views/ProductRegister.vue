@@ -626,6 +626,84 @@ onBeforeUnmount(() => {
     width: 100%;
   }
 }
+
+/* 라이트 모드 스타일 */
+:global(body.theme-light) .register-page {
+  background: #ffffff !important;
+}
+
+:global(body.theme-light) .page-header h1 {
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .page-header p {
+  color: #666666 !important;
+}
+
+:global(body.theme-light) .form-section {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+:global(body.theme-light) .form-section h3 {
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .form-group label {
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .form-group input,
+:global(body.theme-light) .form-group select,
+:global(body.theme-light) .form-group textarea {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .form-group input:focus,
+:global(body.theme-light) .form-group select:focus,
+:global(body.theme-light) .form-group textarea:focus {
+  border-color: #0f172a !important;
+  background: #ffffff !important;
+}
+
+:global(body.theme-light) .form-group input::placeholder,
+:global(body.theme-light) .form-group textarea::placeholder {
+  color: #999999 !important;
+}
+
+:global(body.theme-light) .form-hint {
+  color: #666666 !important;
+}
+
+:global(body.theme-light) .image-preview img {
+  border-color: #e2e8f0 !important;
+}
+
+:global(body.theme-light) .upload-status {
+  color: #666666 !important;
+}
+
+:global(body.theme-light) .btn-outline {
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+:global(body.theme-light) .btn-outline:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+:global(body.theme-light) .btn-primary {
+  background: #0f172a !important;
+  color: #ffffff !important;
+}
+
+:global(body.theme-light) .btn-primary:hover:not(:disabled) {
+  background: #1e293b !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2) !important;
+}
 </style>
 
 

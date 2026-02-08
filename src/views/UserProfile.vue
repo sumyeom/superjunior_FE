@@ -318,13 +318,13 @@
               <div v-if="loadingPgPayments" class="loading-state">
                 <p>결제 내역을 불러오는 중...</p>
               </div>
-              <div v-else-if="pgPaymentHistories.length === 0" class="point-empty-state">
+              <div v-else-if="filteredPgPaymentHistories.length === 0" class="point-empty-state">
                 <div class="empty-icon">💰</div>
                 <p class="empty-title">결제 내역이 없습니다</p>
               </div>
               <div v-else class="payment-list">
                 <div
-                  v-for="payment in pgPaymentHistories"
+                  v-for="payment in filteredPgPaymentHistories"
                   :key="payment.id"
                   class="payment-item"
                 >
@@ -2191,6 +2191,14 @@ const isSeller = computed(() => {
 
   const roleUpper = role.toUpperCase()
   return roleUpper === 'SELLER' || roleUpper === 'ROLE_SELLER' || roleUpper.includes('SELLER')
+})
+
+// PG 결제 내역 (PENDING 제외)
+const filteredPgPaymentHistories = computed(() => {
+  return pgPaymentHistories.value.filter(payment => {
+    const status = payment.status?.toUpperCase()
+    return status !== 'PENDING'
+  })
 })
 
 // 주문 내역 (취소 제외, PENDING 제외, EXPIRED 제외)
